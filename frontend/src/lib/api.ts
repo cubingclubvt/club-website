@@ -2,30 +2,6 @@
 // lib/api.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-// this commented out section is vibe coded, probably not going to use it but im saving it for now
-// const getBaseUrl = () => {
-//   // 1. If an environment variable is explicitly set, use it (overrides everything)
-//   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-//     return process.env.NEXT_PUBLIC_API_BASE_URL;
-//   }
-
-//   // 2. If running in the browser, match the current hostname
-//   if (typeof window !== "undefined") {
-//     const host = window.location.hostname;
-//     console.log(`HOST ${host}`);
-//     // If we are on localhost or 127.0.0.1, assume backend is on port 8000
-//     if (host === 'localhost' || host === '127.0.0.1') {
-//         return `http://${host}:8000`;
-//     }
-//   }
-
-//   // 3. Server-side fallback (or default)
-//   return "http://127.0.0.1:8000";
-// };
-
-// const API_BASE_URL = getBaseUrl();
-// console.log("URL:", API_BASE_URL);
-
 export async function apiFetch(path: string) {
   // const res = await fetch(`${API_BASE_URL}${path}`, {credentials: "include"});
   //
