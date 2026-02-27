@@ -34,7 +34,8 @@ export async function apiFetch(path: string) {
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
-    next: { revalidate: 3600 },
+    // next: { revalidate: 3600 },
+    cache: "no-store"
   });
 
 
