@@ -1,0 +1,15 @@
+# Django temp files
+**/.venv/
+__pycache__/
+
+# JetBrains IDEs
+.idea/
+.idea_modules/
+*.iml
+
+# SQLite databases
+*.sqlite3
+*.sqlite
+*.db
+
+.env.local

@@ -1,0 +1,15 @@
+{
+  "builds": [
+    {
+      "src": "cubingclub_vt/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "cubingclub_vt/wsgi.py"
+    }
+  ]
+}
+

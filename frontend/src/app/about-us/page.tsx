@@ -1,0 +1,73 @@
+"use client";
+
+import Image from "next/image";
+
+export default function About() {
+  return (
+    <div>
+      <div className="flex flex-col gap-5 items-center max-w-4xl w-full mx-auto my-18 px-4">
+        <h2 className="text-white text-5xl text-center">About Us</h2>
+
+        <div className="mb-8 w-full flex justify-center">
+          <Image
+            src="/cubing_club.jpg"
+            alt="Virginia Tech Campus"
+            width={1200}
+            height={400}
+            className="rounded-xl shadow-lg object-cover max-h-[400px] w-auto"
+            priority
+          />
+        </div>
+
+        <div className="description text-center text-gray-200 leading-relaxed space-y-5 px-2">
+          <p>
+            The <strong>Cubing Club at Virginia Tech</strong> is open to everyone —
+            whether you’re just learning to solve a cube or you’re a nationally
+            ranked speedcuber!
+          </p>
+
+          <p>
+            In addition to weekly meetups, we host both official{" "}
+            <strong>WCA competitions</strong> and internal practice competitions,
+            with results being tracked on this site!
+          </p>
+
+          <p className="font-medium">
+            Join our{" "}
+            <a
+              href="https://discord.gg/gMZQsqgxua"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:underline"
+            > Discord</a>, where all announcements and discussion occur!
+          </p>
+          
+          {/* <div className="space-y-1">
+            <p>
+              Discord:{" "}
+              <a
+                href="https://discord.gg/gMZQsqgxua"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                https://discord.gg/gx6AdZpjfh
+              </a>
+            </p>
+            <p>
+              Instagram:{" "}
+              <a
+                href="https://www.instagram.com/vt.cubingclub/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                https://www.instagram.com/vt.cubingclub/
+              </a>
+            </p>
+          </div> */}
+        </div>
+      </div>
+    </div>
+  );
+}

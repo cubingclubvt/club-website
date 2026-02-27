@@ -1,0 +1,67 @@
+{
+  "name": "Gobbler Cube Day Spring",
+  "location": "Owens Hall Ballroom @ Virginia Tech",
+  "start_time": "2025-04-19T10:00:00Z",
+  "end_time": "2025-04-19T18:45:00Z",
+  "official": true,
+  "events": [
+    {
+      "event-name": "3x3",
+      "Rounds": 3
+    },
+    {
+      "event-name": "2x2",
+      "Rounds": 2
+    },
+    {
+      "event-name": "4x4",
+      "Rounds": 1
+    },
+    {
+      "event-name": "Clock",
+      "Rounds": 1
+    },
+    {
+      "event-name": "Skewb",
+      "Rounds": 2
+    }
+  ],
+  "competitors": [
+    {
+      "school_id": "aritro",
+      "events": ["3x3", "2x2", "4x4", "Pyraminx", "Skewb"]
+    },
+    {
+      "school_id": "benjamin_christie",
+      "events": ["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]
+    },
+    {
+      "school_id": "calebf24",
+      "events": ["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]
+    },
+    {
+      "school_id": "erickauppi43",
+      "events": ["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]
+    },
+    {
+      "school_id": "joshuagao",
+      "events": ["3x3", "2x2"]
+    },
+    {
+      "school_id": "logan456",
+      "events": ["3x3", "2x2"]
+    },
+    {
+      "school_id": "natewerns",
+      "events": ["3x3", "2x2", "4x4"]
+    },
+    {
+      "school_id": "siddharth_suresh",
+      "events": ["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]
+    },
+    {
+      "school_id": "trentenmoder",
+      "events": ["3x3", "2x2", "4x4", "Pyraminx", "Skewb"]
+    }
+  ]
+}
