@@ -43,6 +43,7 @@ export default function SwitchClick(props : MyProps) {
                         <button
                             key={index}
                             type="button"
+                            title={event}
                             // REVISED: The `p-2` and `rounded-md` classes have been removed.
                             // The `cursor-pointer` and `transition-colors` classes are kept.
                             className={`cursor-pointer transition-colors
