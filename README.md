@@ -35,7 +35,6 @@ cd cubingclub-vt
 <!-- * [Python](https://www.python.org/) - Programming language -->
 <!-- * [pygame](https://www.pygame.org/) - Used for rendering of graphics -->
 
-
 ## Contributing
 
 Contributions are welcome! If you find a bug, have a feature request, or would like to contribute code, feel free to open an issue or submit a pull request.
