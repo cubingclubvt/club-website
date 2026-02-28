@@ -13,11 +13,13 @@ DATABASE_URL=postgresql://postgres:password@mainline.proxy.rlwy.net:40561/railwa
 
 ALLOWED_HOSTS=localhost,127.0.0.1,domain.example.com
 
+ALLOWED_ORIGINS=https://cubingclub-vt-deploy-test-frontend.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+
 TIME_ZONE=America/New_York
 
 
 ## Frontend
 
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-DISABLE_BACKEND='false'
+DISABLE_BACKEND=false
 
