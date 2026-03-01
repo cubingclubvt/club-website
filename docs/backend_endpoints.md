@@ -156,6 +156,15 @@ This document provides information about all the available endpoints the backend
         ]
         ```
 
+- `auth_status/` 
+    - Description: Returns whether or not the user is authenticated for the admin panel.
+    - Example response: 
+        ```    
+        {
+            "isAuthenticated": True
+        }
+        ```
+
 # POST/PATCH endpoints
 
 - `competitions/create` 
@@ -216,4 +225,39 @@ This document provides information about all the available endpoints the backend
                 }
               ]
             }
+        ```
+
+- `login/` 
+    - Description: Attempts to login to the admin panel with the given credentials. 
+    - Example request:
+        ```
+        {
+            "username": "admin",
+            "password": "password123"
+        }
+        ```
+    - Successful Response:
+        ```
+        {
+            "isAuthenticated": True
+        }
+        ```
+    - Error Response: 
+        ```
+        {
+            "isAuthenticated": False
+        }
+        ```
+
+- `logout/` 
+    - Description: Creates a new competition
+    - Example request:
+        ```
+        {}
+        ```
+    - Example response:
+        ```
+        {
+            "detail": "Logged Out"
+        }
         ```
