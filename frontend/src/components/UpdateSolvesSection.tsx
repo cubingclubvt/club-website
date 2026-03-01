@@ -175,7 +175,11 @@ function UpdateSolvesSection({ slug, allEventData, initialEvent, initialRound }:
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
-
+        
+        // don't allow submitting when no user is selected 
+        if (solveEntries.length == 0) { 
+            return;
+        }
         if (!validateAllSolves()) {
             setValidationError("All solve data must be valid numbers or 'DNF'");
             setBackendError("");
