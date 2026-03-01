@@ -8,6 +8,8 @@ interface EventProps {
     events: Event[];
     initialEvent: Event;
     changeFunction: (event: Event) => void;
+    eventLabelColor?: string;
+    eventHighlightColor?: string;
 }
 
 interface RoundProps {
@@ -33,9 +35,11 @@ export default function SwitchClick(props : MyProps) {
         props.initialCalculation;
 
     if (props.type === 'event') {
+        const eventLabelColor = props.eventLabelColor || "text-slate-300";
+        const eventHighlightColor = props.eventHighlightColor || "bg-white"
         return (
             <div className={"flex flex-col md:flex-row items-center md:justify-between gap-2 md:gap-5"}>
-                <div className={"text-slate-300 text-lg md:text-xl md:mr-4"}>
+                <div className={`${eventLabelColor} text-lg md:text-xl md:mr-4`}>
                     Event
                 </div>
                 <div className="flex flex-wrap justify-center gap-3 md:gap-5">
@@ -48,7 +52,7 @@ export default function SwitchClick(props : MyProps) {
                             // The `cursor-pointer` and `transition-colors` classes are kept.
                             className={`cursor-pointer transition-colors
                                 ${event === status
-                                ? 'bg-white hover:bg-white'
+                                ? `${eventHighlightColor} hover:${eventHighlightColor}`
                                 : 'hover:bg-slate-400'
                             }`}
                             onClick={() => {

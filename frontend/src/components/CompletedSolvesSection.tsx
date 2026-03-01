@@ -61,6 +61,8 @@ export default function CompletedSolvesSection({ slug, event_rankings, initialSo
                     events={event_rankings.map((eventRanking: EventRankingData) => eventRanking.event_name)}
                     initialEvent={event}
                     changeFunction={setEvent}
+                    eventHighlightColor="bg-sky-300"
+                    eventLabelColor="text-slate-800"
                 />
             </div>
 
