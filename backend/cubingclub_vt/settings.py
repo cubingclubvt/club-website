@@ -142,10 +142,13 @@ else: # production
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    SESSION_COOKIE_SAMESITE = 'None'
-    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
     X_FRAME_OPTIONS = 'DENY'
+
+    CSRF_COOKIE_DOMAIN = ".vtcubing.org"
+    SESSION_COOKIE_DOMAIN = ".vtcubing.org"
 
 
 ALLOWED_ORIGINS = [
