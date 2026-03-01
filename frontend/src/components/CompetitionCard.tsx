@@ -25,6 +25,7 @@ export default function CompetitionCard({ competition, update = false } : Compet
                                     height={45}
                                     width={45}
                                     alt="Official WCA Competition"
+                                    className="drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]"
                                 />
                             </div>
                         ) : null}
