@@ -92,17 +92,19 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                         {event_rankings.map((eventRanking: EventRankingData) => (
                             <tr key={eventRanking.event_name} className={"hover:bg-gray-50"}>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 font-medium text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.event_name}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>N/A</td>
+                                    {eventRanking.event_name ?? "N/A"}</td>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
-                                    {eventRanking.single_ranking}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.best_single}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.best_average}</td>
+                                  {eventRanking.current_single_ranking ?? "N/A"}</td>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
-                                    {eventRanking.average_ranking}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>N/A</td>
+                                    {eventRanking.single_ranking ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
+                                    {eventRanking.best_single ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
+                                    {eventRanking.best_average ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
+                                    {eventRanking.average_ranking ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
+                                    {eventRanking.current_average_ranking ?? "N/A"}</td>
                             </tr>
                         ))}
                         </tbody>
