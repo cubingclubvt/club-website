@@ -65,15 +65,18 @@ class RankingService:
         )
 
     @staticmethod
-    def get_all_single_rankings(event):
+    def get_all_single_rankings(event, current_only=False):
         """Return a list of competitors and their best single for the event.
 
         Each entry contains both a human-readable `result` and a numeric
         `raw_result` in seconds so later consumers can sort reliably.
+
+        If current_only=True, competitors with grade=-1 are excluded.
         """
-        competitor_bests = (
+        qs = (
             Solve.objects
             .filter(competition_round__event=event, solve_time__isnull=False)
+            .exclude(solve_time=timedelta(0))
             .select_related('competitor', 'competition_round__competition')
             .values(
                 'competitor__id',
@@ -82,16 +85,16 @@ class RankingService:
                 'competitor__school_id',
                 'competition_round__competition__name',
             )
-            .exclude(solve_time=timedelta(0))
             .annotate(best_single=Min('solve_time'))
         )
 
+        if current_only:
+            qs = qs.exclude(competitor__grade=-1)
+
         # Convert annotated timedelta to seconds for sorting
         sorted_bests = sorted(
-            competitor_bests,
-            key=lambda x: (
-                RankingService._to_seconds(x['best_single']),
-            )
+            qs,
+            key=lambda x: RankingService._to_seconds(x['best_single'])
         )
 
         result = []
@@ -111,19 +114,26 @@ class RankingService:
         return result
 
     @staticmethod
-    def get_all_average_rankings(event):
+    def get_all_average_rankings(event, current_only=False):
+        """Return a list of competitors and their best average for the event.
+
+        If current_only=True, competitors with grade=-1 are excluded.
+        """
         start_time = time.time()
-        # Prefetch ALL solves for this event in one query
-        solves = (
+
+        qs = (
             Solve.objects
             .filter(competition_round__event=event)
             .select_related("competitor", "competition_round__competition", "competition_round__event")
             .order_by("competition_round_id", "competitor_id", "solve_number")
         )
 
+        if current_only:
+            qs = qs.exclude(competitor__grade=-1)
+
         # Group solves by competitor → round
         competitor_rounds = defaultdict(lambda: defaultdict(list))
-        for s in solves:
+        for s in qs:
             competitor_rounds[s.competitor][s.competition_round_id].append(s)
 
         competitor_stats = []
@@ -134,13 +144,11 @@ class RankingService:
             for round_id, round_solves in rounds.items():
                 comp_round = round_solves[0].competition_round
 
-                # Use your internal AverageCalculator, but normalize its return
                 avg = AverageCalculator.calculate_solves_average(round_solves, comp_round.event.average_type)
                 avg_seconds = RankingService._to_seconds(avg)
                 if avg_seconds != float('inf'):
                     averages.append((avg_seconds, comp_round))
 
-                # Use helper that inspects round_solves (no DB queries)
                 single = SolveService.get_round_single_from_solves(round_solves)
                 single_seconds = RankingService._to_seconds(single)
                 if single_seconds != float('inf'):
@@ -184,12 +192,14 @@ class RankingService:
         return result
 
     @staticmethod
-    def get_distinct_single_rankings(event):
-        # get_all_single_rankings now returns raw_result for numeric sorting
-        all_rankings = RankingService.get_all_single_rankings(event)
+    def get_distinct_single_rankings(event, current_only=False):
+        """Return one entry per competitor with their best single, ranked.
+
+        If current_only=True, competitors with grade=-1 are excluded.
+        """
+        all_rankings = RankingService.get_all_single_rankings(event, current_only=current_only)
 
         best_by_competitor = {}
-
         for entry in all_rankings:
             cid = entry['competitor_id']
             if cid not in best_by_competitor or entry['raw_result'] < best_by_competitor[cid]['raw_result']:
@@ -230,16 +240,32 @@ class RankingService:
         return None
 
     @staticmethod
-    def get_competitor_single_ranking(competitor, event):
-        all_single_rankings = RankingService.get_all_single_rankings(event)
-        for entry in all_single_rankings:
+    def get_competitor_single_ranking(competitor, event, current_only=False):
+        """Return the competitor's single ranking.
+
+        If current_only=True and the competitor has grade=-1, returns None (N/A).
+        Otherwise ranks them against all competitors with grade != -1.
+        """
+        if current_only and competitor.grade == -1:
+            return None
+
+        distinct_rankings = RankingService.get_distinct_single_rankings(event, current_only=current_only)
+        for entry in distinct_rankings:
             if entry.get('competitor_id') == competitor.id:
                 return entry['rank']
         return None
 
     @staticmethod
-    def get_competitor_average_ranking(competitor, event):
-        all_average_rankings = RankingService.get_all_average_rankings(event)
+    def get_competitor_average_ranking(competitor, event, current_only=False):
+        """Return the competitor's average ranking.
+
+        If current_only=True and the competitor has grade=-1, returns None (N/A).
+        Otherwise ranks them against all competitors with grade != -1.
+        """
+        if current_only and competitor.grade == -1:
+            return None
+
+        all_average_rankings = RankingService.get_all_average_rankings(event, current_only=current_only)
         for entry in all_average_rankings:
             if entry['competitor_id'] == competitor.id:
                 return entry['rank']
