@@ -135,7 +135,7 @@ class CompetitionInfoSerializer(serializers.ModelSerializer):
         model = Competition
         fields = ['id', 'name', 'location',
                   'events', 'num_competitors',
-                  'date', 'official']
+                  'date', 'official', 'official_link']
 
     def get_events(self, obj):
         # Get all rounds for this competition

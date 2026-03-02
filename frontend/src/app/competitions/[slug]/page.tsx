@@ -18,10 +18,10 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
     // solve results as well? but this also adds some small overhead and feels a bit unnecessary, i think i prefer current strategy
 
     let competitionName = "Null";
-    let competitionDate = "N/A"
+    let competitionDate = "N/A";
     let competitionNumCompetitors = 0;
     let competitionEventData = [];
-
+    let competitionLink = null;
 
     let competitionSolveData : SolveSession[] = [];
 
@@ -33,6 +33,7 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
           competitionDate = competitionMetadata.date;
           competitionNumCompetitors = competitionMetadata.num_competitors;
           competitionEventData = competitionMetadata.events;
+          competitionLink = competitionMetadata.official_link; 
 
           competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
 
@@ -69,6 +70,14 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
                         {competitionNumCompetitors}
                     </div>
                 </div>
+                {competitionLink != null &&
+                    <a href={competitionLink} 
+                        className="transition hover:scale-105 shrink-0 text-blue-400 underline hover:text-blue-300" 
+                        target="_blank" 
+                        rel="noopener noreferrer">
+                        Official WCA Link
+                    </a>
+                }
             </section>
 
             <div className={"my-separator mx-auto h-px w-8/10 bg-gray-300 my-16"}></div>
