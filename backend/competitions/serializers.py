@@ -99,14 +99,18 @@ class CompetitorDetailSerializer(CompetitorSerializer):
         for event in events:
             best_single = RankingService.get_competitor_best_single(obj, event)
             best_average = RankingService.get_competitor_best_average(obj, event)
-            single_ranking = RankingService.get_competitor_single_ranking(obj, event)
-            average_ranking = RankingService.get_competitor_average_ranking(obj, event)
+            single_ranking = RankingService.get_competitor_single_ranking(obj, event, current_only=False)
+            average_ranking = RankingService.get_competitor_average_ranking(obj, event, current_only=False)
+            current_single_ranking = RankingService.get_competitor_single_ranking(obj, event, current_only=True)
+            current_average_ranking = RankingService.get_competitor_average_ranking(obj, event, current_only=True)
             data.append({
                 "event_name": event.name,
                 "best_single": best_single,
                 "best_average": best_average,
                 "single_ranking": single_ranking,
-                "average_ranking": average_ranking
+                "average_ranking": average_ranking,
+                "current_single_ranking": current_single_ranking,
+                "current_average_ranking": current_average_ranking,
                 })
         return EventRankingSerializer(data, many=True).data
 
@@ -238,6 +242,8 @@ class EventRankingSerializer(serializers.Serializer):
     best_average = serializers.CharField()
     single_ranking = serializers.IntegerField(allow_null=True)
     average_ranking = serializers.IntegerField(allow_null=True)
+    current_single_ranking = serializers.IntegerField(allow_null=True)
+    current_average_ranking = serializers.IntegerField(allow_null=True)
 
 
 class AbstractResultsSerializer(serializers.Serializer):
