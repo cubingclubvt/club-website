@@ -53,8 +53,10 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                 {/* MOBILE-FRIENDLY CHANGE: Use a two-column grid on mobile (sm:grid-cols-2) and a four-column grid on larger screens (md:grid-cols-4). */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
                     <div>
-                        <div className="text-sm text-gray-600 mb-1">Year</div>
-                        <div className="text-lg font-semibold text-gray-800">{`${grade}`}</div>
+                        <div className="text-sm text-gray-600 mb-1">Grade</div>
+                        <div className="text-lg font-semibold text-gray-800">
+                            {{1:'Freshman', 2:'Sophomore', 3:'Junior', 4:'Senior', 5:'Graduate', 7:'Alum'}[grade] || 'Unknown'}
+                        </div>
                     </div>
                     <div>
                         <div className="text-sm text-gray-600 mb-1">Competing since</div>
