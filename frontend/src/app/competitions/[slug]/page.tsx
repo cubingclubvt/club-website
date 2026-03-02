@@ -54,6 +54,14 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
             <h1 className={"text-white text-center text-5xl mt-24"}>
                 {competitionName}
             </h1>
+            {competitionLink != null &&
+                    <a href={competitionLink}
+                        className="text-center transition hover:scale-105 shrink-0 text-blue-400 underline hover:text-blue-300 text-xl"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        <p className="p-2">WCA Link</p>
+                    </a>
+                }
             <section className={"flex justify-center gap-40 items-center max-w-4xl mt-8 w-full mx-auto p-4"}>
                 <div className={"flex flex-col gap-3 items-center"}>
                     <div className={"text-slate-400 text-center"}>
@@ -71,23 +79,6 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
                         {competitionNumCompetitors}
                     </div>
                 </div>
-                {competitionLink != null &&
-                    <a href={competitionLink}
-                        className="transition hover:scale-105 shrink-0 text-blue-400 underline hover:text-blue-300"
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        <div className="flex items-center">
-                            <Image
-                                src={"/wca-icon.svg"}
-                                height={50}
-                                width={50}
-                                alt="WCA Competition Link"
-                                className="drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]"
-                            />
-                            <p className="p-3 text-xl">WCA Link</p>
-                        </div>
-                    </a>
-                }
             </section>
 
             <div className={"my-separator mx-auto h-px w-8/10 bg-gray-300 my-16"}></div>
