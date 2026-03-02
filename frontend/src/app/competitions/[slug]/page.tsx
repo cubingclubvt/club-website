@@ -1,7 +1,8 @@
 
 import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
-import {SolveSession} from "@/types/SolveSession";
+import { SolveSession } from "@/types/SolveSession";
 import { apiFetch } from "@/lib/api";
+import Image from "next/image";
 
 interface CompetitionDetailProps {
     params: Promise<{
@@ -10,7 +11,7 @@ interface CompetitionDetailProps {
 }
 
 
-async function CompetitionDetail({ params }: CompetitionDetailProps){
+async function CompetitionDetail({ params }: CompetitionDetailProps) {
 
     const { slug } = await params;
 
@@ -23,23 +24,23 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
     let competitionEventData = [];
     let competitionLink = null;
 
-    let competitionSolveData : SolveSession[] = [];
+    let competitionSolveData: SolveSession[] = [];
 
 
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
-          const competitionMetadata = await apiFetch(`/competitions/${slug}`);
-          competitionName = competitionMetadata.name;
-          competitionDate = competitionMetadata.date;
-          competitionNumCompetitors = competitionMetadata.num_competitors;
-          competitionEventData = competitionMetadata.events;
-          competitionLink = competitionMetadata.official_link; 
+            const competitionMetadata = await apiFetch(`/competitions/${slug}`);
+            competitionName = competitionMetadata.name;
+            competitionDate = competitionMetadata.date;
+            competitionNumCompetitors = competitionMetadata.num_competitors;
+            competitionEventData = competitionMetadata.events;
+            competitionLink = competitionMetadata.official_link;
 
-          competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
+            competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
 
 
         } catch (error) {
-          console.error("Failed to fetch competition metadata:", error);
+            console.error("Failed to fetch competition metadata:", error);
         }
 
 
@@ -71,11 +72,20 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
                     </div>
                 </div>
                 {competitionLink != null &&
-                    <a href={competitionLink} 
-                        className="transition hover:scale-105 shrink-0 text-blue-400 underline hover:text-blue-300" 
-                        target="_blank" 
+                    <a href={competitionLink}
+                        className="transition hover:scale-105 shrink-0 text-blue-400 underline hover:text-blue-300"
+                        target="_blank"
                         rel="noopener noreferrer">
-                        Official WCA Link
+                        <div className="flex items-center">
+                            <Image
+                                src={"/wca-icon.svg"}
+                                height={50}
+                                width={50}
+                                alt="WCA Competition Link"
+                                className="drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]"
+                            />
+                            <p className="p-3 text-xl">WCA Link</p>
+                        </div>
                     </a>
                 }
             </section>
