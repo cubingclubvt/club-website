@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF} from '@react-three/drei';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 
@@ -32,7 +32,10 @@ export default function CubeScene() {
             <ambientLight intensity={.5} />
             <directionalLight position={[10, 10, 5]} intensity={1.2} />
             <Model />
+            
             {/*<OrbitControls />*/}
         </Canvas>
     );
 }
+
+useGLTF.preload('/rubikscube.glb');
