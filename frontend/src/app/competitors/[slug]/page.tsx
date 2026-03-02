@@ -55,7 +55,7 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                     <div>
                         <div className="text-sm text-gray-600 mb-1">Grade</div>
                         <div className="text-lg font-semibold text-gray-800">
-                            {{1:'Freshman', 2:'Sophomore', 3:'Junior', 4:'Senior', 5:'Graduate', 7:'Alum'}[grade] || 'Unknown'}
+                            {{1:'Freshman', 2:'Sophomore', 3:'Junior', 4:'Senior', 5:'Graduate', 7:'Alum'}[grade] || 'N/A'}
                         </div>
                     </div>
                     <div>
