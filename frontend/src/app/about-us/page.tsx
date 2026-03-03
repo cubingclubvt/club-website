@@ -38,7 +38,7 @@ export default function About() {
               href="https://discord.gg/gMZQsqgxua"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-500 hover:underline hover:text-amber-400"
+              className="link link--orange"
             > Discord</a>, where all announcements and discussion occur!
           </p>
         </div>
