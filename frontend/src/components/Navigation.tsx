@@ -16,13 +16,13 @@ export default function Navbar() {
                     </svg>
                 </Link>
                 <div className="hidden md:flex space-x-4 sm:space-x-10 text-sm sm:text-lg font-medium">
-                    <Link href={"/competitions"} className="text-white hover:text-blue-400 transition">Competitions</Link>
+                    <Link href={"/competitions"} className="text-white link transition">Competitions</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/rankings"} className="text-white hover:text-blue-400 transition">Rankings</Link>
+                    <Link href={"/rankings"} className="text-white link transition">Rankings</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/calendar"} className="text-white hover:text-blue-400 transition">Calendar</Link>
+                    <Link href={"/calendar"} className="text-white link transition">Calendar</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/about-us"} className="text-white hover:text-blue-400 transition">About Us</Link>
+                    <Link href={"/about-us"} className="text-white link transition">About Us</Link>
                 </div>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                     <svg className="w-8 h-8 scale-125 hover:scale-145 hover:text-blue-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
