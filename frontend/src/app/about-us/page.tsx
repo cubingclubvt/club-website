@@ -38,34 +38,9 @@ export default function About() {
               href="https://discord.gg/gMZQsqgxua"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
+              className="text-amber-500 hover:underline hover:text-amber-400"
             > Discord</a>, where all announcements and discussion occur!
           </p>
-          
-          {/* <div className="space-y-1">
-            <p>
-              Discord:{" "}
-              <a
-                href="https://discord.gg/gMZQsqgxua"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                https://discord.gg/gx6AdZpjfh
-              </a>
-            </p>
-            <p>
-              Instagram:{" "}
-              <a
-                href="https://www.instagram.com/vt.cubingclub/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                https://www.instagram.com/vt.cubingclub/
-              </a>
-            </p>
-          </div> */}
         </div>
       </div>
     </div>
