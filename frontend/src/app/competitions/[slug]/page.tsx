@@ -2,7 +2,6 @@
 import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
 import { SolveSession } from "@/types/SolveSession";
 import { apiFetch } from "@/lib/api";
-import Image from "next/image";
 
 interface CompetitionDetailProps {
     params: Promise<{
