@@ -52,6 +52,10 @@ body {
   transition: transform 0.25s ease;
 }
 
+/* This allows you to use link styling, without the underline. For instance, this is used for the small screen hamburger menu */
+.link--no-underline::after {
+  content:none;
+}
 
 .link:hover {
   color: #ff8442; 

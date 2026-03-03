@@ -50,7 +50,7 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
             <h1 className="text-white text-center text-5xl mt-24">
                 {competitionLink ? (
                     <a href={competitionLink}
-                        className="inline-flex items-center gap-3 transition hover:scale-105 text-amber-500 hover:underline hover:text-amber-400"
+                        className="link link--orange inline-flex items-center gap-3  hover:scale-103 !transition-transform !duration-250"
                         target="_blank"
                         rel="noopener noreferrer">
                         {competitionName}
