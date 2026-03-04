@@ -44,6 +44,7 @@ interface FormData {
     start_time: string;
     end_time: string;
     official: boolean;
+    official_link: string | null;
     events: EventInformation[];
     competitors: MinimalCompetitorInformation[];
 }
@@ -66,6 +67,7 @@ const SubmissionForm: React.FC = () => {
         start_time: "",
         end_time: "",
         official: false,
+        official_link: "",
         events: [],
         competitors: [],
     });
@@ -216,6 +218,7 @@ const SubmissionForm: React.FC = () => {
                 name: formData.name,
                 location: formData.location,
                 official: formData.official,
+                official_link: formData.official_link == "" || !formData.official ? null : formData.official_link,
                 start_time: formData.start_time,
                 end_time: formData.end_time,
                 events: formData.events,
@@ -348,6 +351,21 @@ const SubmissionForm: React.FC = () => {
                                     </label>
                                     {formErrors.official && <p className="text-sm text-red-600">{formErrors.official}</p>}
                                 </div>
+                                {formData.official && 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Official WCA Link
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="official_link"
+                                        value={formData.official_link || ""}
+                                        onChange={handleInputChange}
+                                        className={`w-full text-black px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all 'border-red-500 bg-red-50' : 'border-gray-300'
+                                        }`}
+                                        placeholder=""
+                                    />
+                                </div>}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Events

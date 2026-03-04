@@ -10,19 +10,19 @@ export default function Navbar() {
         <nav className="fixed top-0 left-0 w-full backdrop-blur-sm z-50 py-4 px-4 sm:py-6 sm:px-10 flex justify-between items-center">
             <div className="flex justify-between items-center w-full">
                 <Link href="/">
-                    <svg viewBox="0 0 500 500" fill="currentColor" className="w-8 h-8 text-white hover:text-blue-400 transition hover:scale-120">
+                    <svg viewBox="0 0 500 500" fill="currentColor" className="w-8 h-8 text-white hover:text-[#ff9c56] transition hover:scale-120">
                         <path d="M29 29h116v116H29zM191 29h116v116H191zM354 29h116v116H354zM29 191h116v116H29zM192 191h116v116H192zM354 
                      191h116v116H354zM29 354h116v116H29zM192 354h116v116H192zM354 354h116v116H354z"/>
                     </svg>
                 </Link>
                 <div className="hidden md:flex space-x-4 sm:space-x-10 text-sm sm:text-lg font-medium">
-                    <Link href={"/competitions"} className="text-white link transition">Competitions</Link>
+                    <Link href={"/competitions"} className="text-white link">Competitions</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/rankings"} className="text-white link transition">Rankings</Link>
+                    <Link href={"/rankings"} className="text-white link">Rankings</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/calendar"} className="text-white link transition">Calendar</Link>
+                    <Link href={"/calendar"} className="text-white link">Calendar</Link>
                     <span className="border-r border-white h-auto" />
-                    <Link href={"/about-us"} className="text-white link transition">About Us</Link>
+                    <Link href={"/about-us"} className="text-white link">About Us</Link>
                 </div>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                     <svg className="w-8 h-8 scale-125 hover:scale-145 hover:text-blue-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,10 +36,10 @@ export default function Navbar() {
             {isMenuOpen && (
                 <div className="md:hidden absolute top-full left-0 w-full bg-gray-800 border-b border-gray-800 backdrop-blur-md pb-4 shadow-xl">
                     <div className="flex flex-col space-y-4 pt-4 items-center text-lg font-medium">
-                        <Link href={"/competitions"} onClick={closeMenu} className="text-white hover:text-blue-400 transition w-full text-center py-2">Competitions</Link>
-                        <Link href={"/rankings"} onClick={closeMenu} className="text-white hover:text-blue-400 transition w-full text-center py-2">Rankings</Link>
-                        <Link href={"/calendar"} onClick={closeMenu} className="text-white hover:text-blue-400 transition w-full text-center py-2">Calendar</Link>
-                        <Link href={"/about-us"} onClick={closeMenu} className="text-white hover:text-blue-400 transition w-full text-center py-2">About Us</Link>
+                        <Link href={"/competitions"} onClick={closeMenu} className="text-white link link--no-underline w-full text-center py-2 hover:no-underline">Competitions</Link>
+                        <Link href={"/rankings"} onClick={closeMenu} className="text-white link link--no-underline w-full text-center py-2">Rankings</Link>
+                        <Link href={"/calendar"} onClick={closeMenu} className="text-white link link--no-underline w-full text-center py-2">Calendar</Link>
+                        <Link href={"/about-us"} onClick={closeMenu} className="text-white link link--no-underline w-full text-center py-2">About Us</Link>
                     </div>
                 </div>
             )}

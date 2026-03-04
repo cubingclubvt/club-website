@@ -135,7 +135,7 @@ class CompetitionInfoSerializer(serializers.ModelSerializer):
         model = Competition
         fields = ['id', 'name', 'location',
                   'events', 'num_competitors',
-                  'date', 'official']
+                  'date', 'official', 'official_link']
 
     def get_events(self, obj):
         # Get all rounds for this competition
@@ -162,6 +162,7 @@ class CompetitionCreateSerializer(serializers.Serializer):
     name = serializers.CharField()
     location = serializers.CharField()
     official = serializers.BooleanField()
+    official_link = serializers.URLField(required=False, allow_null=True)
     start_time = serializers.DateTimeField()
     end_time = serializers.DateTimeField()
 

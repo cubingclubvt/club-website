@@ -1,6 +1,6 @@
 
 import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
-import {SolveSession} from "@/types/SolveSession";
+import { SolveSession } from "@/types/SolveSession";
 import { apiFetch } from "@/lib/api";
 
 interface CompetitionDetailProps {
@@ -10,7 +10,7 @@ interface CompetitionDetailProps {
 }
 
 
-async function CompetitionDetail({ params }: CompetitionDetailProps){
+async function CompetitionDetail({ params }: CompetitionDetailProps) {
 
     const { slug } = await params;
 
@@ -18,40 +18,49 @@ async function CompetitionDetail({ params }: CompetitionDetailProps){
     // solve results as well? but this also adds some small overhead and feels a bit unnecessary, i think i prefer current strategy
 
     let competitionName = "Null";
-    let competitionDate = "N/A"
+    let competitionDate = "N/A";
     let competitionNumCompetitors = 0;
     let competitionEventData = [];
+    let competitionLink = null;
 
-
-    let competitionSolveData : SolveSession[] = [];
+    let competitionSolveData: SolveSession[] = [];
 
 
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
-          const competitionMetadata = await apiFetch(`/competitions/${slug}`);
-          competitionName = competitionMetadata.name;
-          competitionDate = competitionMetadata.date;
-          competitionNumCompetitors = competitionMetadata.num_competitors;
-          competitionEventData = competitionMetadata.events;
+            const competitionMetadata = await apiFetch(`/competitions/${slug}`);
+            competitionName = competitionMetadata.name;
+            competitionDate = competitionMetadata.date;
+            competitionNumCompetitors = competitionMetadata.num_competitors;
+            competitionEventData = competitionMetadata.events;
+            competitionLink = competitionMetadata.official_link;
 
-          competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
+            competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
 
 
         } catch (error) {
-          console.error("Failed to fetch competition metadata:", error);
+            console.error("Failed to fetch competition metadata:", error);
         }
-
-
-
-
     }
-
 
     return (
         <div>
-            <h1 className={"text-white text-center text-5xl mt-24"}>
-                {competitionName}
+
+
+            <h1 className="text-white text-center text-5xl mt-24">
+                {competitionLink ? (
+                    <a href={competitionLink}
+                        className="link link--orange inline-flex items-center gap-3  hover:scale-103 !transition-transform !duration-250"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        {competitionName}
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 hidden md:block">
+                            <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
+                        </svg>
+                    </a>
+                ) : (competitionName)}
             </h1>
+
             <section className={"flex justify-center gap-40 items-center max-w-4xl mt-8 w-full mx-auto p-4"}>
                 <div className={"flex flex-col gap-3 items-center"}>
                     <div className={"text-slate-400 text-center"}>
