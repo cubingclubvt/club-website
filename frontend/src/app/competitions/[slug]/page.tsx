@@ -48,11 +48,11 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
             <h1 className="text-white text-center text-5xl mt-24">
                 {competitionLink ? (
                     <a href={competitionLink}
-                        className="link link--orange inline-flex items-center gap-3 hover:scale-103 !transition-transform !duration-250"
+                        className="link link--orange items-center gap-3 hover:scale-103 !transition-transform !duration-250"
                         target="_blank"
                         rel="noopener noreferrer">
                         {competitionName}
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 hidden md:block">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 inline-block ml-3 -mt-2">
                             <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
                         </svg>
                     </a>
