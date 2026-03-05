@@ -37,14 +37,3 @@ class AverageCalculator:
         from .solve_service import SolveService
         solves = list(comp_round.solves.filter(competitor=competitor).order_by('solve_number'))
         return AverageCalculator.calculate_solves_average(solves, comp_round.event.average_type)
-        # durations = SolveService.solves_to_durations(solves)
-        #
-        # avg_type = comp_round.event.average_type
-        # if avg_type == "mean":
-        #     value = AverageCalculator.calculate_mean(durations)
-        # elif avg_type == "average":
-        #     value = AverageCalculator.calculate_average(durations)
-        # else:
-        #     raise ValueError(f"Invalid average type: {avg_type}")
-        #
-        # return SolveService.format_solve_time(timedelta(seconds=value))
