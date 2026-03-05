@@ -53,7 +53,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     }, [event, calculation]);
 
 
-    function formatMobileName(name: String): String{
+    function formatMobileName(name: string): string{
         const splitName = name.split(" ");
         return `${splitName[0]} ${splitName[splitName.length-1][0]}.`
     }
