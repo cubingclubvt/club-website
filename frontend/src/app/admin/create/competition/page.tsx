@@ -81,6 +81,7 @@ const SubmissionForm: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [competitorDisplayList, setCompetitorDisplayList] = useState<CompetitorInformation[]>([]);
+    const [eventOptions, setEventOptions] = useState<Event[]>([]);
 
     useEffect(() => {
         async function fetchCompetitors() {
@@ -93,6 +94,18 @@ const SubmissionForm: React.FC = () => {
             }
         }
         fetchCompetitors();
+    }, []);
+
+    useEffect(() => {
+      async function fetchEvents() {
+        try {
+          const data = await apiFetch("/competitions/rankings/");
+          setEventOptions(data.events);
+        } catch (err) {
+          console.error("Error fetching events:", err);
+        }
+      }
+      fetchEvents();
     }, []);
 
     const filteredCompetitors = allCompetitors.filter(c =>
