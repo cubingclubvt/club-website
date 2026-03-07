@@ -3,6 +3,8 @@ import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
 import { SolveSession } from "@/types/SolveSession";
 import { apiFetch } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 interface CompetitionDetailProps {
     params: Promise<{
         slug: string;
@@ -35,7 +37,12 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
             competitionEventData = competitionMetadata.events;
             competitionLink = competitionMetadata.official_link;
 
-            competitionSolveData = await apiFetch(`/competitions/${slug}/3x3/1`);
+            const events = competitionEventData;
+            const initialEvent = events[0].name;
+
+            competitionSolveData = await apiFetch(
+                `/competitions/${slug}/${initialEvent}/1`
+            );
 
 
         } catch (error) {
@@ -80,10 +87,9 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
 
             <div className={"my-separator mx-auto h-px w-9/10 md:w-8/10 bg-gray-300 my-4 md:my-16"}></div>
 
-            {/*TODO: make sure initialEvent is actually an event in the comp - so just pull first event you see in db*/}
             <CompetitionSolvesSection
                 slug={slug} initialSolveData={competitionSolveData}
-                allEventData={competitionEventData} initialEvent={"3x3"} initialRound={1}
+                allEventData={competitionEventData} initialEvent={competitionEventData[0].name} initialRound={1}
             />
 
         </div>

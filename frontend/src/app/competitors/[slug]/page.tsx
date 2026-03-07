@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-import type { Event } from "@/types/Event";
 import CompletedSolvesSection from "@/components/CompletedSolvesSection";
 import {EventRankingData} from "@/types/EventRankingData";
 
@@ -11,7 +10,7 @@ interface CompetitorProps {
 
 async function CompetitorDetail({ params } : CompetitorProps) {
     const { slug } = await params;
-    const initialEvent: Event = "3x3";
+    let initialEvent = "";
 
     let firstname = "";
     let lastname = "";
@@ -26,6 +25,7 @@ async function CompetitorDetail({ params } : CompetitorProps) {
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
             const competitorData = await apiFetch(`/competitions/competitor/${slug}`);
+            initialEvent = competitorData.event_rankings?.[0].event_name;
             firstname = competitorData.first_name;
             lastname = competitorData.last_name;
             school_id = competitorData.school_id;

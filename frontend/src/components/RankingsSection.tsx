@@ -31,6 +31,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     const [rankingsData, setRankingsData] = useState(initialRankingsData);
     const [event, setEvent] = useState(initialEvent);
     const [calculation, setCalculation] = useState(initialCalc);
+    const [eventOptions, setEventOptions] = useState<Event[]>([]);
 
     const isMounted = useRef(false);
 
@@ -53,6 +54,20 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     }, [event, calculation]);
 
 
+    useEffect(() => {
+      async function fetchEvents() {
+        try {
+          const data = await apiFetch("/competitions/rankings/");
+          setEventOptions(data.events);
+        } catch (err) {
+          console.error("Error fetching events:", err);
+        }
+      }
+
+      fetchEvents();
+    }, []);
+
+
     function formatMobileName(name: string): string{
         const splitName = name.split(" ");
         return `${splitName[0]} ${splitName[splitName.length-1][0]}.`
@@ -72,7 +87,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
                 <div className="max-w-sm mx-auto">
                     <SwitchClick
                         type={"event"}
-                        events={["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]}
+                        events={eventOptions}
                         initialEvent={event}
                         changeFunction={setEvent}
                     />
