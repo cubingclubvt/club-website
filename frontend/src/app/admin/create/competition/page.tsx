@@ -12,7 +12,6 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect, Suspense} from 'react';
 import Link from 'next/link';
 import { Event } from "@/types/Event";
-import { eventOptions } from '@/types/Event';
 import { apiFetch, apiBodyFetch } from '@/lib/api';
 import { useSearchParams } from "next/navigation";
 
