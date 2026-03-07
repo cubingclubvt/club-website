@@ -7,13 +7,18 @@ export default async function Rankings() {
   let eventOptions: Event[] = [];
 
     try {
-        const data = await apiFetch("/competitions/rankings/");
-        eventOptions = data.events;
+      const { events } = await apiFetch("/competitions/rankings/");
+
+      if (!events || events.length === 0 ) {
+        throw new Error("No events returned from API");
+      }
+
+      eventOptions = events;
     } catch (error) {
-        console.error("Failed to fetch events:", error);
+      console.error("Failed to fetch events:", error);
     }
 
-    const initialEvent = eventOptions.length > 0 ? eventOptions[0] : null;
+    const initialEvent = eventOptions[0];
     const initialCalculation = "single";
     // const rankingsData: any;
     let rankingsData = [];
