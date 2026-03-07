@@ -45,23 +45,21 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
 
     return (
         <div>
-
-
             <h1 className="text-white text-center text-5xl mt-24">
                 {competitionLink ? (
                     <a href={competitionLink}
-                        className="link link--orange inline-flex items-center gap-3  hover:scale-103 !transition-transform !duration-250"
+                        className="link link--orange items-center gap-3 hover:scale-103 !transition-transform !duration-250"
                         target="_blank"
                         rel="noopener noreferrer">
                         {competitionName}
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 hidden md:block">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 inline-block ml-3 -mt-2">
                             <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
                         </svg>
                     </a>
                 ) : (competitionName)}
             </h1>
 
-            <section className={"flex justify-center gap-40 items-center max-w-4xl mt-8 w-full mx-auto p-4"}>
+            <section className={"flex justify-center gap-20 md:gap-40 items-start max-w-4xl mt-8 w-full mx-auto p-4"}>
                 <div className={"flex flex-col gap-3 items-center"}>
                     <div className={"text-slate-400 text-center"}>
                         Date
@@ -71,7 +69,7 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
                     </div>
                 </div>
                 <div className={"flex flex-col gap-3 items-center"}>
-                    <div className={"text-slate-400 text-center"}>
+                    <div className={"text-slate-400 text-center whitespace-nowrap"}>
                         # Competitors
                     </div>
                     <div className={"text-slate-200 text-center text-xl"}>
@@ -80,7 +78,7 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
                 </div>
             </section>
 
-            <div className={"my-separator mx-auto h-px w-8/10 bg-gray-300 my-16"}></div>
+            <div className={"my-separator mx-auto h-px w-9/10 md:w-8/10 bg-gray-300 my-4 md:my-16"}></div>
 
             {/*TODO: make sure initialEvent is actually an event in the comp - so just pull first event you see in db*/}
             <CompetitionSolvesSection

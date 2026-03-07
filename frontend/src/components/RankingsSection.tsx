@@ -53,7 +53,10 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     }, [event, calculation]);
 
 
-
+    function formatMobileName(name: string): string{
+        const splitName = name.split(" ");
+        return `${splitName[0]} ${splitName[splitName.length-1][0]}.`
+    }
 
 
     return (
@@ -114,7 +117,11 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
                                     <Link
                                         href={`/competitors/${singularRanking.school_id}`}
                                         className="px-4 sm:px-6 py-4 block w-full h-full hover:text-orange-400">
-                                        <span className="">{singularRanking.competitor_name}</span>
+                                        {/* MOBILE VERSION (abbreviated) */}
+                                        <span className="md:hidden">{formatMobileName(singularRanking.competitor_name)}</span>
+
+                                        {/* DESKTOP VERSION */}
+                                        <span className="hidden md:inline">{singularRanking.competitor_name}</span>
                                     </Link>
                                 </td>
                                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
