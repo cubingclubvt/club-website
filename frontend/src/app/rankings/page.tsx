@@ -1,7 +1,8 @@
-
 import {Event} from "@/types/Event";
 import RankingsSection from "@/components/RankingsSection";
 import { apiFetch } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export default async function Rankings() {
   let eventOptions: Event[] = [];
