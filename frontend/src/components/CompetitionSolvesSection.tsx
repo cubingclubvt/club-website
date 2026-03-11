@@ -29,12 +29,10 @@ interface SolvesProps {
 export default function CompetitionSolvesSection({
                                           slug, initialSolveData, allEventData, initialEvent, initialRound
                                       } : SolvesProps) {
-
     const [solveData, setSolveData] = useState(initialSolveData);
     const [event, setEvent] = useState(initialEvent);
     const [round, setRound] = useState(initialRound);
     const [numRounds, setNumRounds] = useState(allEventData.find(eventData => eventData.name === initialEvent)?.rounds || 3);
-
 
     //ismounted is here to prevent an unnecessary fetch when component mounts - just use data passed from prop on
     //initial mount! no need to refetch same data
