@@ -159,8 +159,16 @@ const SubmissionForm: React.FC = () => {
     };
 
     const handleEventRoundsChange = (eventName: Event, roundsValue: string) => {
+        const rounds = Number(roundsValue);
+        if (rounds === 0) {
+            // Uncheck all checked competitors to avoid garbage data 
+            setCompetitorDisplayList(prevComp => prevComp.map(c => ({
+                ...c,
+                events: c.events.filter(e => e !== eventName)
+            })));
+        }
         setFormData(prev => {
-            const rounds = Number(roundsValue);
+            
             const index = prev.events.findIndex(e => e["event-name"] === eventName);
             if (index >= 0) {
                 if (rounds > 0) {
@@ -168,11 +176,16 @@ const SubmissionForm: React.FC = () => {
                         i === index ? { ...e, Rounds: rounds } : e
                     ));
                     return { ...prev, events: updatedEvents };
-                } else {
+                } else { // event was deleted
                     const updatedEvents = prev.events.filter((e, i) => i !== index);
-                    return { ...prev, events: updatedEvents };
+                    // Uncheck all checked competitors to avoid garbage data 
+                    const updatedCompetitors = prev.competitors.map(c => ({
+                        ...c,
+                        events: c.events.filter(e => e !== eventName)
+                    }))
+                    return { ...prev, events: updatedEvents, competitors: updatedCompetitors };
                 }
-            } else {
+            } else { // If user added new event 
                 if (rounds > 0) {
                     const newEvent: EventInformation = { "event-name": eventName, Rounds: rounds };
                     const updatedEvents = [...prev.events, newEvent];
@@ -382,12 +395,12 @@ const SubmissionForm: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Events
                                     </label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                                         {eventOptions.map((event: Event) => {
                                             const eventInfo = formData.events.find(e => e["event-name"] === event);
                                             return (
                                                 <div key={event}>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
                                                         {event}
                                                     </label>
                                                     <input
@@ -396,7 +409,7 @@ const SubmissionForm: React.FC = () => {
                                                         value={eventInfo ? eventInfo.Rounds : ''}
                                                         min={0}
                                                         onChange={e => handleEventRoundsChange(event, e.target.value)}
-                                                        className={`w-full px-4 text-black py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                        className={`w-full px-4 text-black py-3 border rounded-lg focus:ring focus:ring-blue-500 focus:border-transparent transition-all`}
                                                         placeholder=""
                                                     />
                                                 </div>
