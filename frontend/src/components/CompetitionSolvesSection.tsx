@@ -29,12 +29,10 @@ interface SolvesProps {
 export default function CompetitionSolvesSection({
                                           slug, initialSolveData, allEventData, initialEvent, initialRound
                                       } : SolvesProps) {
-
     const [solveData, setSolveData] = useState(initialSolveData);
     const [event, setEvent] = useState(initialEvent);
     const [round, setRound] = useState(initialRound);
     const [numRounds, setNumRounds] = useState(allEventData.find(eventData => eventData.name === initialEvent)?.rounds || 3);
-
 
     //ismounted is here to prevent an unnecessary fetch when component mounts - just use data passed from prop on
     //initial mount! no need to refetch same data
@@ -65,6 +63,11 @@ export default function CompetitionSolvesSection({
         setRound(1); 
     }
 
+    function formatMobileName(name: string): string{
+        const splitName = name.split(" ");
+        return `${splitName[0]} ${splitName[splitName.length-1][0]}.`
+    }
+
 
     return (
         <div>
@@ -92,15 +95,26 @@ export default function CompetitionSolvesSection({
                             >
                                 Name
                             </th>
+
+                            {/* This is kind of weird looking but basically the mobile/desktop order part only shows up on mobile/desktop, and
+                            the other one is hidden. This effectively changes the order between solves and averages depending on device.*/}
+                            {/* MOBILE ORDER */}
+                            <th
+                                scope="col"
+                                className="md:hidden w-30 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                                Average
+                            </th>
                             <th
                                 scope="col"
                                 className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                             >
                                 Solves
                             </th>
+                            {/* DESKTOP ORDER */}
                             <th
                                 scope="col"
-                                className="w-30 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                className="hidden md:table-cell w-30 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                             >
                                 Average
                             </th>
@@ -116,13 +130,25 @@ export default function CompetitionSolvesSection({
                                     <Link
                                         href={`/competitors/${session.school_id}`}
                                         className="px-6 py-4 block w-full h-full hover:text-orange-400">
-                                        <span className="">{session.name}</span>
+                                        {/* MOBILE VERSION (abbreviated) */}
+                                        <span className="md:hidden">{formatMobileName(session.name)}</span>
+
+                                        {/* DESKTOP VERSION */}
+                                        <span className="hidden md:inline">{session.name}</span>
                                     </Link>
                                 </td>
+
+                                {/* MOBILE ORDER */}
+                                <td className="md:hidden px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
+                                    {session.average}
+                                </td>
+
                                 <td className="px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
                                     {session.solves.join(", ")}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
+
+                                {/* DESKTOP ORDER */}
+                                <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
                                     {session.average}
                                 </td>
                             </tr>

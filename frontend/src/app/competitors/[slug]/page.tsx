@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-import type { Event } from "@/types/Event";
 import CompletedSolvesSection from "@/components/CompletedSolvesSection";
 import {EventRankingData} from "@/types/EventRankingData";
 
@@ -11,7 +10,7 @@ interface CompetitorProps {
 
 async function CompetitorDetail({ params } : CompetitorProps) {
     const { slug } = await params;
-    const initialEvent: Event = "3x3";
+    let initialEvent = "";
 
     let firstname = "";
     let lastname = "";
@@ -26,6 +25,7 @@ async function CompetitorDetail({ params } : CompetitorProps) {
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
             const competitorData = await apiFetch(`/competitions/competitor/${slug}`);
+            initialEvent = competitorData.event_rankings?.[0].event_name;
             firstname = competitorData.first_name;
             lastname = competitorData.last_name;
             school_id = competitorData.school_id;
@@ -53,8 +53,10 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                 {/* MOBILE-FRIENDLY CHANGE: Use a two-column grid on mobile (sm:grid-cols-2) and a four-column grid on larger screens (md:grid-cols-4). */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
                     <div>
-                        <div className="text-sm text-gray-600 mb-1">Year</div>
-                        <div className="text-lg font-semibold text-gray-800">{`${grade}`}</div>
+                        <div className="text-sm text-gray-600 mb-1">Grade</div>
+                        <div className="text-lg font-semibold text-gray-800">
+                            {{1:'Freshman', 2:'Sophomore', 3:'Junior', 4:'Senior', 5:'Graduate', 7:'Alum'}[grade] || 'N/A'}
+                        </div>
                     </div>
                     <div>
                         <div className="text-sm text-gray-600 mb-1">Competing since</div>
@@ -92,17 +94,19 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                         {event_rankings.map((eventRanking: EventRankingData) => (
                             <tr key={eventRanking.event_name} className={"hover:bg-gray-50"}>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 font-medium text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.event_name}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>N/A</td>
+                                    {eventRanking.event_name ?? "N/A"}</td>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
-                                    {eventRanking.single_ranking}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.best_single}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
-                                    {eventRanking.best_average}</td>
+                                  {eventRanking.current_single_ranking ?? "N/A"}</td>
                                 <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
-                                    {eventRanking.average_ranking}</td>
-                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>N/A</td>
+                                    {eventRanking.single_ranking ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
+                                    {eventRanking.best_single ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center font-semibold text-gray-800 text-xs sm:text-base"}>
+                                    {eventRanking.best_average ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
+                                    {eventRanking.average_ranking ?? "N/A"}</td>
+                                <td className={"border border-gray-400 px-2 sm:px-4 py-3 text-center text-gray-700 text-xs sm:text-base"}>
+                                    {eventRanking.current_average_ranking ?? "N/A"}</td>
                             </tr>
                         ))}
                         </tbody>

@@ -1,13 +1,25 @@
-
 import {Event} from "@/types/Event";
-import {eventOptions} from "@/types/Event";
 import RankingsSection from "@/components/RankingsSection";
 import { apiFetch } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default async function Rankings() {
+  let eventOptions: Event[] = [];
 
+    try {
+      const { events } = await apiFetch("/competitions/rankings/");
 
-    const initialEvent: Event = eventOptions[0];
+      if (!events || events.length === 0 ) {
+        throw new Error("No events returned from API");
+      }
+
+      eventOptions = events;
+    } catch (error) {
+      console.error("Failed to fetch events:", error);
+    }
+
+    const initialEvent = eventOptions[0];
     const initialCalculation = "single";
     // const rankingsData: any;
     let rankingsData = [];

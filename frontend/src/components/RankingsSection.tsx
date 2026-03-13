@@ -31,6 +31,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     const [rankingsData, setRankingsData] = useState(initialRankingsData);
     const [event, setEvent] = useState(initialEvent);
     const [calculation, setCalculation] = useState(initialCalc);
+    const [eventOptions, setEventOptions] = useState<Event[]>([]);
 
     const isMounted = useRef(false);
 
@@ -53,7 +54,24 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
     }, [event, calculation]);
 
 
+    useEffect(() => {
+      async function fetchEvents() {
+        try {
+          const data = await apiFetch("/competitions/rankings/");
+          setEventOptions(data.events);
+        } catch (err) {
+          console.error("Error fetching events:", err);
+        }
+      }
 
+      fetchEvents();
+    }, []);
+
+
+    function formatMobileName(name: string): string{
+        const splitName = name.split(" ");
+        return `${splitName[0]} ${splitName[splitName.length-1][0]}.`
+    }
 
 
     return (
@@ -69,7 +87,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
                 <div className="max-w-sm mx-auto">
                     <SwitchClick
                         type={"event"}
-                        events={["3x3", "2x2", "4x4", "Clock", "Pyraminx", "Skewb"]}
+                        events={eventOptions}
                         initialEvent={event}
                         changeFunction={setEvent}
                     />
@@ -114,7 +132,11 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
                                     <Link
                                         href={`/competitors/${singularRanking.school_id}`}
                                         className="px-4 sm:px-6 py-4 block w-full h-full hover:text-orange-400">
-                                        <span className="">{singularRanking.competitor_name}</span>
+                                        {/* MOBILE VERSION (abbreviated) */}
+                                        <span className="md:hidden">{formatMobileName(singularRanking.competitor_name)}</span>
+
+                                        {/* DESKTOP VERSION */}
+                                        <span className="hidden md:inline">{singularRanking.competitor_name}</span>
                                     </Link>
                                 </td>
                                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">

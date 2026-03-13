@@ -95,6 +95,8 @@ This document provides information about all the available endpoints the backend
                     "best_average": "18.33",
                     "single_ranking": 15,
                     "average_ranking": 4
+                    "current_single_ranking": 15,
+                    "current_average_ranking": null
                 }
             ]
         }

@@ -26,7 +26,7 @@ class Competition(models.Model):
     official = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    official_link = models.URLField(max_length=255, null=True,blank=True)
 
     def __str__(self):
         return f"{self.name}"

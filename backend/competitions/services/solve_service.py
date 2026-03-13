@@ -3,7 +3,7 @@ class SolveService:
     def format_solve_time(solve_time):
         if solve_time is None or solve_time.total_seconds() == 0:
             return "DNF"
-        total_seconds = solve_time.total_seconds()
+        total_seconds = round(solve_time.total_seconds(), 2)
         minutes, seconds = divmod(total_seconds, 60)
         whole_seconds = int(seconds)
         hundredths = int(round((seconds - whole_seconds) * 100))
