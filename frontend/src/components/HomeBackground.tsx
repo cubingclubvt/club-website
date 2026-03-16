@@ -30,7 +30,7 @@ const cubeParticles = [
   {src: "Skewb.svg", scale: 56},
   {src: "Sq1.svg", scale: 55}
 ]
-const sizeMult = 1.4
+const sizeMult = .9
 
 export default function HomeBackground() {
   const [init, setInit] = useState(false);
@@ -63,6 +63,9 @@ export default function HomeBackground() {
       },
       fpsLimit: 120,
       particles: {
+        size: {
+          value: 80,
+        },
         color: {
           value: "#ffffff",
         },
@@ -80,12 +83,12 @@ export default function HomeBackground() {
             default: OutMode.out,
           },
           random: false,
-          speed: 1.4,
+          speed: {min: 1, max: 1.2},
           straight: false,
-          angle: {
-            offset: 0,
-            value: 30
-          }
+          // angle: {
+          //   offset: 0,
+          //   value: 30
+          // }
           
         },
         rotate: {
@@ -99,9 +102,9 @@ export default function HomeBackground() {
         number: {
           density: {
             enable: true,
-            area: 2000
+            area: 3000
           },
-          value: 35,
+          value: 60,
         },
         opacity: {
           value: 0.5,
@@ -126,7 +129,6 @@ export default function HomeBackground() {
               enable: false, 
               retries: 15
             },
-
         },
         // interactivity: {
         //   modes: {

@@ -5,9 +5,10 @@ import TextScramble from '@/components/TextScramble';
 const ModelViewer = dynamic(() =>
     import('@/components/CubeScene'), { 
         ssr: false, 
-        loading: () => <div className="h-[50vh] flex items-center justify-center">
-        <div className="w-11 h-11 border-5 border-white/30 border-t-white rounded-full animate-spin" />
-      </div>});
+        loading: () => 
+        <div className="h-[50vh] flex items-center justify-center">
+            <div className="w-11 h-11 border-5 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>});
 
 const ParticleBackground = dynamic(() =>
     import('@/components/HomeBackground'), {ssr: false});
