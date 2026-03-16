@@ -15,6 +15,22 @@ import {
 import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSlim`, install the "@tsparticles/slim" package too.
 // import { loadBasic } from "@tsparticles/basic"; // if you are going to use `loadBasic`, install the "@tsparticles/basic" package too.
 
+// contains the file name for each icon plus the size. I have to give each an individual scale, otherwise
+// every icon will sized completely inaccurately to real life (all svg's are the same size) 
+const cubeParticles = [
+  {src: "2x2.svg", scale: 53}, 
+  {src: "3x3.svg", scale: 55},
+  {src: "4x4.svg", scale: 59},
+  {src: "5x5.svg", scale: 60},
+  {src: "6x6.svg", scale: 63},
+  {src: "7x7.svg", scale: 65},
+  {src: "Clock.svg", scale: 72},
+  {src: "Megaminx.svg", scale: 75},
+  {src: "Pyraminx.svg", scale: 80},
+  {src: "Skewb.svg", scale: 56},
+  {src: "Sq1.svg", scale: 55}
+]
+const sizeMult = 1.4
 
 export default function HomeBackground() {
   const [init, setInit] = useState(false);
@@ -37,10 +53,6 @@ export default function HomeBackground() {
   const particlesLoaded = async (container?: Container): Promise<void> => {
     console.log(container);
   };
-
-  const particlePaths = ["2x2.svg", "3x3.svg", "4x4.svg", "5x5.svg", 
-    "6x6.svg", "7x7.svg", "Clock.svg", "Megaminx.svg", "Pyraminx.svg", 
-    "Skewb.svg", "Sq1.svg"];
 
   const options: ISourceOptions = useMemo(
     () => ({
@@ -65,11 +77,15 @@ export default function HomeBackground() {
           direction: MoveDirection.bottom,
           enable: true,
           outModes: {
-            default: "out",
+            default: OutMode.out,
           },
           random: false,
-          speed: 2,
+          speed: 1.4,
           straight: false,
+          angle: {
+            offset: 0,
+            value: 30
+          }
           
         },
         rotate: {
@@ -77,15 +93,15 @@ export default function HomeBackground() {
           enable: true,
           animation: {
             enable: true,
-            speed: {min: 2, max:4},
+            speed: {min: 2, max:2.3},
           },
         },
         number: {
           density: {
             enable: true,
-            area: 1200
+            area: 2000
           },
-          value: 75,
+          value: 35,
         },
         opacity: {
           value: 0.5,
@@ -93,29 +109,43 @@ export default function HomeBackground() {
         shape: {
           type: "image",
           options: {
-            image: particlePaths.map((path) => ({
-              src: `/background_particles/${path}`,
+            image: cubeParticles.map((cube) => ({
+              src: `/background_particles/${cube.src}`,
               width: 500,
-              height: 500
+              height: 500,
+              particles: {
+                size: {value:cube.scale * sizeMult}
+              }
             }))
           }
-        },
-        size: {
-          value: {min: 40, max: 50},
         },
         collisions: {
             enable: true,
             mode: "bounce",
             overlap: {
               enable: false, 
-            }
+              retries: 15
+            },
+
         },
+        // interactivity: {
+        //   modes: {
+        //     repulse: {
+        //       distance: 300, // Distance at which they start pushing away
+        //       duration: 0.1,
+        //       factor: 500,
+        //       speed: 100,
+        //       maxSpeed: 500,
+        //     }
+        //   }
+        // },
+
         shadow: {
           enable: true,
           color: {
-            value: "#113243", 
+            value: "#29384A", 
           },
-          blur: 10,
+          blur: 5,
           offset: {
             x: 0,
             y: 0
