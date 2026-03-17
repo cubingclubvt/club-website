@@ -59,15 +59,15 @@ async function CompetitorDetail({ params } : CompetitorProps) {
                         </div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-1">Competing since</div>
+                        <div className="text-sm text-gray-600 mb-1">Started</div>
                         <div className="text-lg font-semibold text-gray-800">{`${first_comp_date}`}</div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-1">Comps attended</div>
+                        <div className="text-sm text-gray-600 mb-1">Competitions</div>
                         <div className="text-lg font-semibold text-gray-800">{`${num_competitions}`}</div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-1">Total solves</div>
+                        <div className="text-sm text-gray-600 mb-1">Solves</div>
                         <div className="text-lg font-semibold text-gray-800">{`${total_solves}`}</div>
                     </div>
                 </div>

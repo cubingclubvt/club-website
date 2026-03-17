@@ -77,7 +77,7 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
                 </div>
                 <div className={"flex flex-col gap-3 items-center"}>
                     <div className={"text-slate-400 text-center whitespace-nowrap"}>
-                        # Competitors
+                        Competitors
                     </div>
                     <div className={"text-slate-200 text-center text-xl"}>
                         {competitionNumCompetitors}
