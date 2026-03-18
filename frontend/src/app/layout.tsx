@@ -48,7 +48,7 @@ export default function RootLayout({
            {children}
         </main>
 
-        <footer className="">
+        <footer className="z-10">
           <Footer />
         </footer>
 

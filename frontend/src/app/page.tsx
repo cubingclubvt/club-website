@@ -15,11 +15,11 @@ const ParticleBackground = dynamic(() =>
 
 export default function CubePage() {
     return (
-        <div className="relative min-h-screen overflow-hidden">
+        <div className="relative overflow-hidden">
             <ParticleBackground />
 
             <div className="relative z-10 flex flex-col items-center pt-[15vh]">
-                <div className={"text-center"}>
+                <div className="text-center h-[100px]">
                     <h1 className="text-6xl text-white mb-15">
                         <TextScramble text="Cubing Club at VT"/>
                     </h1>
