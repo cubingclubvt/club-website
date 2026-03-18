@@ -6,21 +6,26 @@ interface TextScrambleProps {
     text: string;
     speed?: number;
     scrambleTime?: number; // higher is faster
+    delay?: number; // how long before it unscrambles 
 }
 
-export default function TextScramble({text, speed = 30, scrambleTime = .3}: TextScrambleProps) {
+export default function TextScramble({text, speed = 30, scrambleTime = .3, delay = 300}: TextScrambleProps) {
     const [displayedText, setDisplayedText] = useState("");
-
+    const [hasStarted, setHasStarted] = useState(false);
+    
     useEffect(() => {
+        const startTimeout = setTimeout(() => {
+            setHasStarted(true);
+        }, delay);
+
         let iteration = 0;
         const splitText = text.split("");
         const interval = setInterval(() => {
             setDisplayedText(splitText.map((char, index) => {
                 // don't scramble spaces
                 if (char == ' ') return ' ';
-                
                 // revealed characters
-                if (index < iteration) {
+                if (index < iteration && hasStarted) {
                     return splitText[index];
                 } else { // scrambled characters
                     return randomChar();
@@ -30,10 +35,15 @@ export default function TextScramble({text, speed = 30, scrambleTime = .3}: Text
             if (iteration > text.length) {
                 clearInterval(interval);
             }
-            iteration += scrambleTime;
+            // only iterate once it has actually started 
+            if (hasStarted) iteration += scrambleTime;
         }, speed);
-    return () => clearInterval(interval);
-    },[text, speed, scrambleTime]);
+        
+        return () => {
+            clearTimeout(startTimeout)
+            clearInterval(interval);
+        }
+        },[text, speed, scrambleTime, hasStarted, delay]);
 
     return (<span>{displayedText}</span>);
 }
