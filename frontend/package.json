@@ -13,6 +13,9 @@
   "dependencies": {
     "@react-three/drei": "^10.1.2",
     "@react-three/fiber": "^9.1.2",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/shape-image": "^3.9.1",
+    "@tsparticles/slim": "^3.9.1",
     "@types/three": "^0.176.0",
     "next": "15.3.8",
     "react": "^19.0.0",
