@@ -143,7 +143,7 @@ export default function HomeBackground() {
         // },
 
         shadow: {
-          enable: true,
+          enable: false,
           color: {
             value: "#29384A", 
           },
