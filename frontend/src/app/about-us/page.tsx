@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 export default function About() {
   const images = [
-    "/cubing_club.jpg",
-    "/cubing2.jpg",
-    "/cubing3.jpg",
+    "/images/cubing_club.jpg",
+    "/images/first.JPG",
+    "/images/second.JPG",
     // .JPG -> .jpg ??
   ];
 
