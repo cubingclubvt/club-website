@@ -8,6 +8,7 @@ export default function About() {
     "/cubing_club.jpg",
     "/cubing2.jpg",
     "/cubing3.jpg",
+    // .JPG -> .jpg ??
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
