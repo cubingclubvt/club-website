@@ -1,8 +1,25 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function About() {
+  const images = [
+    "/cubing_club.jpg",
+    "/cubing2.jpg",
+    "/cubing3.jpg",
+  ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   return (
     <div>
       <div className="flex flex-col gap-5 items-center max-w-4xl w-full mx-auto my-18 px-4">
@@ -10,7 +27,7 @@ export default function About() {
 
         <div className="mb-8 w-full flex justify-center">
           <Image
-            src="/cubing_club.jpg"
+            src={images[currentIndex]}
             alt="Virginia Tech Campus"
             width={1200}
             height={400}
@@ -39,7 +56,9 @@ export default function About() {
               target="_blank"
               rel="noopener noreferrer"
               className="link link--orange"
-            > Discord</a>, where all announcements and discussion occur!
+            >
+              {" "}Discord
+            </a>, where all announcements and discussion occur!
           </p>
         </div>
       </div>
