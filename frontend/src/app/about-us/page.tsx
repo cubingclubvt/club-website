@@ -40,7 +40,7 @@ export default function About() {
         <div className="description text-center text-gray-200 leading-relaxed space-y-5 px-2">
           <p>
             The <strong>Cubing Club at Virginia Tech</strong> is open to everyone —
-            whether you’re just learning to solve a cube or you’re a nationally
+            whether you just started learning to solve a cube or you’re a nationally
             ranked speedcuber!
           </p>
 
