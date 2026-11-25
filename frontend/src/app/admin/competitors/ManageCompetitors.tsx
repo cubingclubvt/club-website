@@ -113,7 +113,7 @@ function RemoveCompetitorDialog({ competitor, onClose, onRemoved }: {
             onClose={onClose} onSubmit={remove} saving={saving} error={error} destructive
             submitLabel="Remove competitor" savingLabel="Removing…"
         >
-            <p className="text-sm">This permanently removes the competitor from the roster. Competitors with linked competition records are protected.</p>
+            <p className="text-sm">This permanently removes the competitor profile. Competitors with recorded solves are protected.</p>
         </AdminEditDialog>
     );
 }

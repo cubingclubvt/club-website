@@ -122,28 +122,31 @@ class RoundType(models.Model):
         return f"{self.name}"
 
 
-# Tracks whether a checked-in competitor is still present at the competition.
+# Stores a person's name and attendance for a single competition.
 class CompetitionAttendance(models.Model):
     competition = models.ForeignKey(Competition, on_delete=models.CASCADE, related_name="attendance")
-    competitor = models.ForeignKey(Competitor, on_delete=models.CASCADE, related_name="attendance")
+    display_name = models.CharField(max_length=511)
     is_present = models.BooleanField(default=True)
+    check_in_key = models.UUIDField(null=True, blank=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["competition", "competitor"], name="unique_competition_attendee"),
+            models.UniqueConstraint(fields=["competition", "check_in_key"], name="unique_competition_check_in_key"),
         ]
+
+    def __str__(self):
+        return self.display_name
 
 
 # Approves a person to scramble a specific event across all waves at a competition.
 class CompetitionScrambler(models.Model):
-    competition = models.ForeignKey(Competition, on_delete=models.CASCADE, related_name="scrambler_approvals")
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="scrambler_approvals")
-    competitor = models.ForeignKey(Competitor, on_delete=models.CASCADE, related_name="scrambler_approvals")
+    attendee = models.ForeignKey(CompetitionAttendance, on_delete=models.CASCADE, related_name="scrambler_approvals")
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["competition", "event", "competitor"], name="unique_competition_scrambler",
+                fields=["event", "attendee"], name="unique_competition_scrambler",
             ),
         ]
 
@@ -155,6 +158,8 @@ class CompetitionWave(models.Model):
     name = models.CharField(max_length=255, blank=True)
     station_count = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     scramblers_per_group = models.PositiveIntegerField(null=True, blank=True)
+    judges_per_group = models.PositiveSmallIntegerField(null=True, blank=True)
+    schedule_version = models.PositiveIntegerField(default=0, db_default=0)
     allowed_rounds = models.ManyToManyField(CompetitionRound, related_name="waves")
 
     class Meta:
@@ -178,18 +183,18 @@ def validate_wave_rounds(sender, instance, action, reverse, model, pk_set, using
         raise ValidationError("A wave can only offer rounds from its competition.")
 
 
-# Stores a competitor's chosen round within a wave and whether approval is pending.
+# Stores an attendee's chosen round within a wave and whether approval is pending.
 class WaveEntry(models.Model):
     wave = models.ForeignKey(CompetitionWave, on_delete=models.CASCADE, related_name="entries")
-    competitor = models.ForeignKey(Competitor, on_delete=models.CASCADE, related_name="wave_entries")
+    attendee = models.ForeignKey(CompetitionAttendance, on_delete=models.CASCADE, related_name="wave_entries")
     competition_round = models.ForeignKey(CompetitionRound, on_delete=models.CASCADE, related_name="wave_entries")
     is_pending = models.BooleanField(default=False, db_default=False)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["wave", "competitor"], name="unique_wave_entry_competitor"),
+            models.UniqueConstraint(fields=["wave", "attendee"], name="unique_wave_entry_attendee"),
             models.UniqueConstraint(
-                fields=["competition_round", "competitor"],
+                fields=["competition_round", "attendee"],
                 condition=models.Q(is_pending=False),
                 name="unique_approved_round_entry",
             ),
@@ -197,6 +202,8 @@ class WaveEntry(models.Model):
 
     def clean(self):
         super().clean()
+        if self.wave_id and self.attendee_id and self.wave.competition_id != self.attendee.competition_id:
+            raise ValidationError({"attendee": "Choose an attendee from this wave's competition."})
         if self.wave_id and self.competition_round_id and not self.wave.allows_round(self.competition_round):
             raise ValidationError({"competition_round": "Choose a round offered by this wave."})
 
@@ -219,7 +226,7 @@ class CompetitionGroup(models.Model):
         ]
 
 
-# Assigns a competitor to solve, judge, or scramble for an event round within a group.
+# Assigns each attendee one role in a group, with one or more rounds for scramblers.
 class GroupAssignment(models.Model):
     class Role(models.TextChoices):
         SOLVER = "solver", "Solver"
@@ -227,24 +234,48 @@ class GroupAssignment(models.Model):
         SCRAMBLER = "scrambler", "Scrambler"
 
     group = models.ForeignKey(CompetitionGroup, on_delete=models.CASCADE, related_name="assignments")
-    competition_round = models.ForeignKey(CompetitionRound, on_delete=models.CASCADE, related_name="group_assignments")
-    competitor = models.ForeignKey(Competitor, on_delete=models.CASCADE, related_name="group_assignments")
+    competition_round = models.ForeignKey(
+        CompetitionRound, on_delete=models.CASCADE, related_name="group_assignments", null=True, blank=True,
+    )
+    scramble_rounds = models.ManyToManyField(CompetitionRound, related_name="scrambler_assignments", blank=True)
+    attendee = models.ForeignKey(CompetitionAttendance, on_delete=models.CASCADE, related_name="group_assignments")
     role = models.CharField(max_length=10, choices=Role.choices)
+    station_number = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["group", "competitor"], name="unique_group_assignment_person"),
+            models.UniqueConstraint(fields=["group", "attendee"], name="unique_group_assignment_person"),
+            models.UniqueConstraint(fields=["group", "role", "station_number"], name="unique_group_role_per_station"),
+            models.CheckConstraint(
+                condition=models.Q(role__in=("judge", "scrambler"), competition_round__isnull=True, station_number__isnull=True)
+                | (models.Q(role="solver", competition_round__isnull=False)
+                   & (models.Q(station_number__isnull=True) | models.Q(station_number__gt=0))),
+                name="assignment_round_and_station_match_role",
+            ),
         ]
 
     def clean(self):
         super().clean()
-        if self.group_id and self.competition_round_id and not self.group.wave.allows_round(self.competition_round):
+        if not self.group_id:
+            return
+        wave = self.group.wave
+        if self.attendee_id and wave.competition_id != self.attendee.competition_id:
+            raise ValidationError({"attendee": "Choose an attendee from this group's competition."})
+        if self.competition_round_id and not wave.allows_round(self.competition_round):
             raise ValidationError({"competition_round": "Choose a round offered by this group's wave."})
+
+
+AUTOMATIC_SCRAMBLE_GENERATOR = "cubing.js"
 
 
 class ScrambleSetQuerySet(models.QuerySet):
     def with_scrambles(self):
         return self.exclude(scrambles=[], extra_scrambles=[])
+
+    def for_results(self):
+        return self.with_scrambles().exclude(
+            generated_at__isnull=False, group__status__in=[CompetitionGroup.Status.UPCOMING, CompetitionGroup.Status.ACTIVE],
+        )
 
 
 # Stores regular and extra scrambles for a round, optionally tied to a specific group.

@@ -3,7 +3,7 @@ import random
 from competitions.services.round_service import RoundService
 from competitions.services.competitor_service import CompetitorService
 from competitions.services.ranking_service import RankingService
-from competitions.models import Competition, CompetitionGroup, Competitor, CompetitionRound, Event, GroupAssignment, ScrambleSet, Solve, WaveEntry
+from competitions.models import AUTOMATIC_SCRAMBLE_GENERATOR, Competition, CompetitionGroup, CompetitionScrambler, Competitor, CompetitionRound, Event, GroupAssignment, ScrambleSet, Solve, WaveEntry
 from competitions.services.solve_service import SolveService
 from rest_framework.response import Response 
 from rest_framework.decorators import api_view, permission_classes
@@ -89,7 +89,7 @@ def _round_results_response(round_obj):
 
 
 def _round_scrambles_response(round_obj):
-    sets = round_obj.scramble_sets.with_scrambles().select_related('group__wave')
+    sets = round_obj.scramble_sets.for_results().select_related('group__wave')
     return Response(PublicScrambleSetSerializer(sets, many=True).data)
 
 
@@ -171,21 +171,20 @@ def _competition_deletion_summary(competition):
     competition_round = Q(competition_round__competition=competition)
     solves = Solve.objects.filter(competition_round)
     attendance = competition.attendance.all()
-    scrambler_approvals = competition.scrambler_approvals.all()
-    wave_entries = WaveEntry.objects.filter(competition_round | Q(wave__competition=competition))
-    group_assignments = GroupAssignment.objects.filter(competition_round | Q(group__wave__competition=competition))
-    affected_people = solves.values('competitor_id').union(
-        attendance.values('competitor_id'),
-        scrambler_approvals.values('competitor_id'),
-        wave_entries.values('competitor_id'),
-        group_assignments.values('competitor_id'),
+    attendee_competition = Q(attendee__competition=competition)
+    scrambler_approvals = CompetitionScrambler.objects.filter(attendee_competition)
+    wave_entries = WaveEntry.objects.filter(competition_round | attendee_competition | Q(wave__competition=competition))
+    group_assignments = GroupAssignment.objects.filter(
+        competition_round | attendee_competition | Q(group__wave__competition=competition),
     )
-    solve_stats = solves.aggregate(count=Count('pk'), last_update=Max('updated_at'))
+    solve_stats = solves.aggregate(
+        count=Count('pk'), competitors=Count('competitor_id', distinct=True), last_update=Max('updated_at'),
+    )
     scramble_sets = list(ScrambleSet.objects.filter(competition_round).order_by('pk'))
     counts = {
         'rounds': competition.rounds.count(),
         'solves': solve_stats['count'],
-        'people_affected': affected_people.count(),
+        'competitors_with_solves': solve_stats['competitors'],
         'scramble_sets': len(scramble_sets),
         'check_ins': attendance.count(),
         'scrambler_approvals': scrambler_approvals.count(),
@@ -283,12 +282,9 @@ def admin_edit_competitor(request, competitor_id):
     if serializer.validated_data.pop('updated_at', None) != competitor.updated_at:
         return Response({'detail': 'This competitor changed. Reload the list before trying again.'}, status=status.HTTP_409_CONFLICT)
     if removing:
-        if any(relation.exists() for relation in (
-            competitor.solves, competitor.attendance, competitor.scrambler_approvals,
-            competitor.wave_entries, competitor.group_assignments,
-        )):
+        if competitor.solves.exists():
             return Response(
-                {'detail': 'This competitor has linked competition records and cannot be removed.'},
+                {'detail': 'This competitor has linked solves and cannot be removed.'},
                 status=status.HTTP_409_CONFLICT,
             )
         competitor.delete()
@@ -411,7 +407,9 @@ def admin_competitor_result(request, competition_id, round_id, competitor_id):
 def _round_scramble_groups(round_obj):
     return CompetitionGroup.objects.filter(
         wave__competition_id=round_obj.competition_id, wave__allowed_rounds=round_obj,
-    )
+    ).filter(
+        Q(assignments__isnull=True) | Q(assignments__role=GroupAssignment.Role.SOLVER, assignments__competition_round=round_obj),
+    ).distinct()
 
 
 def _validate_scramble_group(round_obj, group_id, *, existing=None):
@@ -429,6 +427,7 @@ def _validate_scramble_group(round_obj, group_id, *, existing=None):
 def admin_round_scrambles(request, competition_id, round_id):
     rounds = CompetitionRound.objects.all()
     if request.method == 'POST':
+        get_object_or_404(Competition.objects.select_for_update(), pk=competition_id)
         rounds = rounds.select_for_update()
     round_obj = get_object_or_404(rounds, pk=round_id, competition_id=competition_id)
     sets = round_obj.scramble_sets.all()
@@ -462,6 +461,7 @@ def admin_round_scrambles(request, competition_id, round_id):
 @permission_classes([IsAuthenticated])
 @transaction.atomic
 def admin_scramble_set(request, competition_id, round_id, set_id):
+    get_object_or_404(Competition.objects.select_for_update(), pk=competition_id)
     round_obj = get_object_or_404(CompetitionRound.objects.select_for_update(), pk=round_id, competition_id=competition_id)
     scramble_set = get_object_or_404(round_obj.scramble_sets, pk=set_id)
     removing = request.method == 'DELETE'
@@ -480,6 +480,11 @@ def admin_scramble_set(request, competition_id, round_id, set_id):
 
     if 'group_id' in data:
         _validate_scramble_group(round_obj, data['group_id'], existing=scramble_set)
+    if scramble_set.generator_name == AUTOMATIC_SCRAMBLE_GENERATOR and any(
+        value != getattr(scramble_set, field) for field, value in data.items()
+    ):
+        data['generator_name'] = 'manual'
+        data['generator_version'] = ''
     for field, value in data.items():
         setattr(scramble_set, field, value)
     if data:

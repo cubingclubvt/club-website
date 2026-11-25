@@ -194,7 +194,7 @@ class PublicCompetitionInfoSerializer(CompetitionInfoSerializer):
         fields = CompetitionInfoSerializer.Meta.fields + ['scramble_rounds']
 
     def get_scramble_rounds(self, obj):
-        rounds = ScrambleSet.objects.with_scrambles().filter(
+        rounds = ScrambleSet.objects.for_results().filter(
             competition_round__competition=obj,
         ).order_by('competition_round__event__name', 'competition_round__number').values_list(
             'competition_round__event__name', 'competition_round__number',
@@ -277,7 +277,7 @@ class CompetitionDetailsUpdateSerializer(CompetitionDetailsSerializer):
             removed_rounds = rounds.filter(number__gt=count)
             if removed_rounds.filter(
                 Q(solves__isnull=False) | Q(waves__isnull=False) | Q(wave_entries__isnull=False)
-                | Q(group_assignments__isnull=False) | Q(scramble_sets__isnull=False),
+                | Q(group_assignments__isnull=False) | Q(scrambler_assignments__isnull=False) | Q(scramble_sets__isnull=False),
             ).exists():
                 errors[name] = 'Rounds with solves, waves, assignments, or scrambles cannot be removed here.'
                 continue

@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.3.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "next dev",
@@ -17,6 +20,7 @@
     "@tsparticles/shape-image": "^3.9.1",
     "@tsparticles/slim": "^3.9.1",
     "@types/three": "^0.176.0",
+    "cubing": "0.66.1",
     "next": "15.3.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

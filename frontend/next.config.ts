@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["cubing"],
+  outputFileTracingIncludes: {
+    "/api/grouping/**": ["./node_modules/cubing/dist/lib/cubing/**/*"],
+  },
   async redirects() {
     return [
       { source: "/admin/create/competition", destination: "/admin/competitions/new", permanent: false },

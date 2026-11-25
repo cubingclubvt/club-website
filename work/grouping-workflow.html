@@ -1,0 +1,575 @@
+<style>
+  #vt-grouping {
+    color-scheme: dark;
+    --page: #141a23;
+    --panel: #1b2330;
+    --line: #364251;
+    --muted: #adb8c8;
+    --text: #f2f4f8;
+    --orange: #fabc82;
+    --ink: #271a12;
+    --green: #a4dbbc;
+    --blue: #afc9f5;
+    --radius: 6px;
+    isolation: isolate;
+    container-type: inline-size;
+    width: 100%;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font: 400 14px/1.5 "Roboto Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  #vt-grouping *, #vt-grouping *::before, #vt-grouping *::after { box-sizing: border-box; }
+  #vt-grouping [hidden] { display: none !important; }
+  #vt-grouping h1, #vt-grouping h2, #vt-grouping h3, #vt-grouping p { margin: 0; font-family: inherit; color: inherit; }
+  #vt-grouping h1 { font-size: clamp(23px, 4.4cqw, 39px); font-weight: 650; line-height: 1.16; letter-spacing: -.045em; overflow-wrap: anywhere; }
+  #vt-grouping h2 { font-size: 19px; line-height: 1.28; letter-spacing: -.035em; }
+  #vt-grouping h3 { font-size: 14px; font-weight: 650; }
+  #vt-grouping .vg-muted { color: var(--muted); }
+  #vt-grouping .vg-small { font-size: 12px; }
+  #vt-grouping .vg-orange { color: var(--orange); }
+  #vt-grouping .vg-mast { padding: 14px 25px; min-height: 52px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid var(--line); }
+  #vt-grouping .vg-mark { display: grid; place-items: center; flex: 0 0 25px; height: 25px; border: 1px solid var(--orange); color: var(--orange); font-weight: 800; font-size: 10px; border-radius: 3px; }
+  #vt-grouping .vg-shell { padding: 22px 25px 27px; display: grid; gap: 20px; }
+  #vt-grouping .vg-title { display: grid; gap: 7px; }
+  #vt-grouping .vg-toolbar, #vt-grouping .vg-actions, #vt-grouping .vg-status-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  #vt-grouping .vg-toolbar { justify-content: space-between; gap: 12px; }
+  #vt-grouping .vg-nav { display: flex; gap: 3px 10px; flex-wrap: wrap; padding: 0; border-bottom: 1px solid var(--line); }
+  #vt-grouping button, #vt-grouping .vg-link-button {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 7px 11px;
+    min-height: 36px;
+    max-width: 100%;
+  }
+  #vt-grouping .vg-link-button { display: inline-flex; align-items: center; text-decoration: none; }
+  #vt-grouping button:hover:not(:disabled), #vt-grouping .vg-link-button:hover { background: #293342; border-color: #718399; }
+  #vt-grouping button:focus-visible, #vt-grouping a:focus-visible, #vt-grouping select:focus-visible, #vt-grouping input:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+  #vt-grouping button[disabled] { color: #8290a2; opacity: .65; }
+  #vt-grouping .vg-primary { background: var(--orange); color: var(--ink); border-color: var(--orange); }
+  #vt-grouping .vg-primary:hover:not(:disabled) { background: #ffce9e; border-color: #ffce9e; }
+  #vt-grouping .vg-tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); padding: 8px 10px; }
+  #vt-grouping .vg-tab[aria-pressed="true"] { border-bottom-color: var(--orange); color: var(--orange); }
+  #vt-grouping label.vg-wave { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); }
+  #vt-grouping select { color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 9px; font: inherit; min-height: 36px; max-width: 100%; }
+  #vt-grouping .vg-board { display: grid; gap: 16px; }
+  #vt-grouping .vg-columns { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 15px; align-items: start; }
+  #vt-grouping .vg-panel { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  #vt-grouping .vg-panel-body { padding: 15px; display: grid; gap: 11px; }
+  #vt-grouping .vg-panel-header { padding: 13px 15px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  #vt-grouping .vg-share { grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 14px; }
+  #vt-grouping .vg-qr { width: 112px; height: auto; max-width: 100%; border-radius: 3px; display: block; }
+  #vt-grouping .vg-field { min-width: 0; display: grid; gap: 5px; }
+  #vt-grouping input { width: 100%; min-width: 0; color: var(--text); background: var(--page); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 9px; font: inherit; }
+  #vt-grouping .vg-competitor-form { width: 100%; max-width: 440px; margin: 0 auto; }
+  #vt-grouping .vg-queue { border-top: 3px solid var(--orange); }
+  #vt-grouping .vg-queue.vg-reviewed { border-top-color: var(--green); }
+  #vt-grouping .vg-chip { display: inline-block; border-radius: 3px; padding: 2px 6px; white-space: nowrap; font-size: 11px; line-height: 1.4; font-weight: 650; background: #2a3545; color: #dee7f3; }
+  #vt-grouping .vg-chip-warn { background: #422f24; color: var(--orange); }
+  #vt-grouping .vg-chip-live { background: #293a58; color: var(--blue); }
+  #vt-grouping .vg-chip-ok { background: #243a34; color: var(--green); }
+  #vt-grouping table { width: 100%; border-collapse: collapse; color: inherit; text-align: left; font-size: 12px; font-variant-numeric: tabular-nums; }
+  #vt-grouping th, #vt-grouping td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  #vt-grouping th { color: var(--muted); font-weight: 500; }
+  #vt-grouping tbody tr:last-child > * { border-bottom: 0; }
+  #vt-grouping th:first-child, #vt-grouping td:first-child { padding-left: 15px; }
+  #vt-grouping th:last-child, #vt-grouping td:last-child { padding-right: 15px; }
+  #vt-grouping .vg-row-highlight { background: #2e2929; }
+  #vt-grouping .vg-row-applied { background: #26362f; }
+  #vt-grouping .vg-row-title { font-weight: 650; }
+  #vt-grouping .vg-row-title .vg-small { font-weight: 400; display: block; }
+  #vt-grouping .vg-change { display: grid; gap: 4px; border-left: 2px solid var(--orange); padding-left: 10px; }
+  #vt-grouping .vg-judge-picker { display: grid; gap: 8px; }
+  #vt-grouping .vg-judge-results { display: grid; gap: 5px; }
+  #vt-grouping .vg-judge-results button { text-align: left; }
+  #vt-grouping .vg-judge-results button[aria-pressed="true"] { border-color: var(--orange); }
+  #vt-grouping .vg-judge-results button span { display: block; margin-top: 3px; color: var(--muted); font-weight: 400; }
+  #vt-grouping .vg-review-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  #vt-grouping .vg-candidate { display:grid; gap:6px; }
+  #vt-grouping .vg-candidate select { width: 100%; }
+  #vt-grouping .vg-approved { color: var(--green); }
+  #vt-grouping .vg-sheet { display:grid; gap: 14px; min-width: 0; overflow: hidden; border-radius: var(--radius); }
+  #vt-grouping .vg-sheet-title { padding: 18px 21px; background: var(--orange); color: var(--ink); display:flex; align-items:end; justify-content:space-between; flex-wrap:wrap; gap:8px 16px; }
+  #vt-grouping .vg-sheet-title h2 { font-size: clamp(26px, 5.5cqw, 50px); line-height: 1; }
+  #vt-grouping .vg-sheet-content { padding: 0 16px; }
+  #vt-grouping .vg-sheet-content th, #vt-grouping .vg-sheet-content td { font-size: clamp(13px, 2.6cqw, 24px); padding: 9px 8px; }
+  #vt-grouping .vg-sheet-foot { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 20px; border-top: 1px solid var(--line); padding: 11px 17px; }
+  #vt-grouping .vg-pdf .vg-sheet-title { background: #e9dccd; }
+  #vt-grouping .vg-pdf { --panel: #f7f1e9; --text: #252a31; --line: #c5bdb4; --muted: #4c5661; color: var(--text); }
+  @container (max-width: 790px) { #vt-grouping .vg-columns { grid-template-columns: minmax(0, 1fr); } }
+  @container (max-width: 490px) {
+    #vt-grouping .vg-shell { padding: 16px 12px 18px; gap: 15px; }
+    #vt-grouping .vg-mast { padding: 11px 12px; }
+    #vt-grouping .vg-dashboard-table .vg-scramble { display: none; }
+    #vt-grouping th, #vt-grouping td { padding-left: 5px; padding-right: 5px; }
+    #vt-grouping th:first-child, #vt-grouping td:first-child { padding-left: 8px; }
+    #vt-grouping th:last-child, #vt-grouping td:last-child { padding-right: 8px; }
+    #vt-grouping .vg-sheet-content { padding: 0 6px; }
+    #vt-grouping .vg-sheet-title { padding: 14px 12px; }
+    #vt-grouping .vg-share { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (pointer: coarse) { #vt-grouping button, #vt-grouping select, #vt-grouping .vg-link-button, #vt-grouping input { min-height: 44px; } }
+</style>
+
+<section id="vt-grouping" aria-label="VT Cubing check-in and grouping screens">
+  <header class="vg-mast"><span class="vg-mark" aria-hidden="true">VT</span><strong>Cubing Club at VT</strong><span class="vg-muted vg-small" data-admin-chrome>/ Admin</span></header>
+  <div class="vg-shell">
+    <div class="vg-title" data-admin-chrome>
+      <p class="vg-orange vg-small">Club Open</p>
+      <h1>Check-in &amp; Groups</h1>
+    </div>
+    <nav class="vg-nav" aria-label="Competition screens" data-admin-chrome>
+      <button class="vg-tab" type="button" data-view="checkin" aria-pressed="false">Check-in</button>
+      <button class="vg-tab" type="button" data-view="groups" aria-pressed="true">Groups</button>
+      <button class="vg-tab" type="button" data-view="projector" aria-pressed="false">Projector</button>
+    </nav>
+
+    <div class="vg-board" data-panel="checkin" hidden>
+      <div class="vg-toolbar">
+        <h2>Recent check-ins</h2>
+        <div class="vg-actions">
+          <a href="#vg-competitor-checkin" class="vg-link-button" data-open-checkin>Open check-in page</a>
+          <button type="button" data-action="share-checkin" aria-controls="vg-checkin-share" aria-expanded="false">Share check-in</button>
+        </div>
+      </div>
+      <div id="vg-checkin-share" data-checkin-share class="vg-panel vg-panel-body vg-share" hidden>
+        <img class="vg-qr" data-qr src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPYAAAD2AQAAAADNaUdlAAAB/klEQVR4nO1ZQWrEMAwcx7k70Af0IwXnZ6VP6g+8T+kDCs6x4GXKyEnaQ0kXemgEK8KSWJeRLI3G3kAc2XU4dAN3/7ENd//p8xNk83XS94hLmC5YtDSeBN+hkYwka2ZFZIk1IzHW3Nfbf+MbbvEvSrWyvTy3VLAE25T5NPhu8l8nIL1gCS3xjPh+tvHrNdVrQGwc3+e2uMKfCAG+PKWKZWoPr+M72H0e+heyHOv3R0vRQf+Cm8WKHfm+2FzwZ1X+W6I9RURqK3SCH1YqqhZjnkiF0JC91E8kG8Cam/Vy1Iu6gE7wkxQFCXxZy0af2Uv+G5RwSjyokICsQFLxgp9KeCGF2QJRRzc/+I38+0ZYI9cshyLygb+l0rOtKGrWJ8Q/9IIfxpZWMy1R5NnDoQ/8pEpFM0vkqcpZI6IT/DWLNrtyUP1YI/SO8IEfkcr53sW7qznRP+yCwU6RGl7if3qpHxhU9LIxOSTyqW7qPxpmm1/Wy70FfPD/en4nOQJtmUcgTIhvM+z9HPh+zX/h2rmSoH07XPG/rA/fHbnOYvSBHzLJhpV2toMkneCPNsI6bBu7Eg+++D/q2rBsyFf9GX3hh0LoslPHMT/za8Nv1iWcCSE6wD/oxyav9Jtdnnw8io6CXaefA9+N92+QckibnPMxf8P9/7tT789w9x/aX/PzCZim+pYtRZSxAAAAAElFTkSuQmCC" width="112" height="112" alt="QR code for the sample check-in link">
+        <div class="vg-board">
+          <label class="vg-field vg-small">Sample check-in link
+            <input type="url" value="https://vtcubing.example/check-in/club-open" readonly data-checkin-url>
+          </label>
+          <div class="vg-actions">
+            <button type="button" data-action="copy-link">Copy link</button>
+            <button type="button" data-action="copy-qr">Copy QR image</button>
+          </div>
+          <p class="vg-muted vg-small" role="status" data-share-status hidden></p>
+        </div>
+      </div>
+      <div class="vg-panel">
+        <table aria-label="Recent check-ins">
+          <thead><tr><th scope="col">Competitor</th><th scope="col">Event</th><th scope="col">Entry</th></tr></thead>
+          <tbody>
+            <tr><td class="vg-row-title">Jamie Park</td><td>3×3 · Round 1</td><td><span class="vg-chip vg-chip-warn" data-entry-status>Pending</span></td></tr>
+            <tr><td class="vg-row-title">Riley Brooks</td><td>2×2 · Round 1</td><td><span class="vg-chip vg-chip-ok">Approved</span></td></tr>
+            <tr><td class="vg-row-title">Avery Cole</td><td>3×3 · Round 1</td><td><span class="vg-chip vg-chip-ok">Group 3</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="vg-actions"><button class="vg-primary" type="button" data-action="go-review" data-checkin-review>Review late entry</button></div>
+    </div>
+
+    <div id="vg-competitor-checkin" class="vg-board vg-competitor-form" data-panel="competitor" hidden>
+      <div class="vg-toolbar"><h1>Club Open check-in</h1></div>
+      <form class="vg-panel vg-panel-body" data-checkin-form>
+        <label class="vg-field">School ID<input name="school-id" type="text" required autocomplete="off" data-school-id></label>
+        <label class="vg-field">Wave and event
+          <select name="wave" data-checkin-wave>
+            <option value="1">Wave 1 · 3×3 Round 1</option>
+            <option value="2">Wave 2 · 2×2 Round 1</option>
+          </select>
+        </label>
+        <p class="vg-muted vg-small" data-checkin-policy>Wave 1 is running. An admin will review your entry.</p>
+        <div class="vg-actions"><button class="vg-primary" type="submit">Check in</button></div>
+        <p class="vg-small" role="status" data-checkin-result hidden></p>
+      </form>
+      <div class="vg-actions"><button type="button" data-view="checkin">Back to admin preview</button></div>
+    </div>
+
+    <div class="vg-board" data-panel="groups">
+      <div class="vg-toolbar">
+        <label class="vg-wave">Wave <select data-wave>
+          <option value="1">Wave 1 · 3×3 Round 1</option>
+          <option value="2">Wave 2 · 2×2 Round 1</option>
+        </select></label>
+        <span class="vg-status-line vg-muted vg-small" data-wave-one-meta>4 stations · 1 scrambler per group <span class="vg-chip" data-live-revision>Revision 3</span></span>
+      </div>
+
+      <div class="vg-columns" data-wave-one>
+        <section class="vg-panel" aria-label="Group schedule">
+          <div class="vg-panel-header"><h2>Group schedule</h2><span class="vg-muted vg-small">3×3 · Round 1</span></div>
+          <table class="vg-dashboard-table" aria-label="Wave 1 group schedule">
+            <thead><tr><th scope="col">Group</th><th scope="col">State</th><th scope="col">Solvers</th><th scope="col">Judges</th><th scope="col" class="vg-scramble">Scramblers</th></tr></thead>
+            <tbody>
+              <tr data-group-row="1"><td class="vg-row-title">Group 1</td><td><span class="vg-chip">Finished</span></td><td>4 / 4</td><td>4 / 4</td><td class="vg-scramble">1 / 1</td></tr>
+              <tr data-group-row="2"><td class="vg-row-title">Group 2</td><td><span class="vg-chip vg-chip-live">Running</span></td><td>4 / 4</td><td>4 / 4</td><td class="vg-scramble">1 / 1</td></tr>
+              <tr data-group-row="3"><td class="vg-row-title">Group 3</td><td><span class="vg-chip">Upcoming</span></td><td data-solvers>3 / 4</td><td data-judges>3 / 3</td><td class="vg-scramble">1 / 1</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="vg-panel vg-queue" data-queue aria-label="Late entries">
+          <div class="vg-panel-header"><h2>Late entries</h2><span class="vg-chip vg-chip-warn" data-queue-status>1 pending</span></div>
+          <div class="vg-panel-body" data-pending-entry>
+            <div><h3>Jamie Park</h3><p class="vg-muted vg-small">3×3 Round 1 · Checked in late</p></div>
+            <div class="vg-actions"><button class="vg-primary" type="button" data-action="review" aria-expanded="false">Review entry</button></div>
+          </div>
+          <div class="vg-panel-body" data-review hidden>
+            <div class="vg-review-head"><div><h3>Jamie Park</h3><p class="vg-muted vg-small">3×3 Round 1</p></div><span class="vg-chip vg-chip-warn">Pending</span></div>
+            <label class="vg-candidate">Assign to group
+              <select data-target-group>
+                <option value="1" disabled>Group 1 · Finished</option>
+                <option value="2" disabled>Group 2 · Running</option>
+                <option value="3" selected>Group 3 · 1 station open</option>
+              </select>
+            </label>
+            <div class="vg-change">
+              <strong>Station 4</strong>
+              <span data-selected-judge>Judge · Jordan Kim</span>
+              <span class="vg-muted vg-small">Scrambler and scramble set stay assigned.</span>
+            </div>
+            <div class="vg-actions">
+              <button type="button" data-action="change-judge" aria-controls="vg-judge-picker" aria-expanded="false">Change judge</button>
+            </div>
+            <div id="vg-judge-picker" class="vg-judge-picker" data-judge-picker hidden>
+              <label class="vg-field">Search competitors
+                <input type="search" placeholder="Name or school ID" autocomplete="off" data-judge-search>
+              </label>
+              <div class="vg-judge-results" aria-label="Matching competitors" data-judge-results></div>
+              <p class="vg-small vg-muted" role="status" data-judge-count></p>
+            </div>
+            <div class="vg-actions">
+              <button class="vg-primary" type="button" data-action="approve">Approve &amp; assign</button>
+              <button type="button" data-action="cancel-review">Cancel</button>
+            </div>
+          </div>
+          <div class="vg-panel-body" data-approved-entry hidden>
+            <div><h3 class="vg-approved">Jamie assigned to Group 3</h3><p class="vg-muted vg-small" data-approved-judge>Station 4 · Judge Jordan Kim</p></div>
+            <div class="vg-actions"><button type="button" data-action="show-group">Show Group 3</button></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="vg-panel vg-panel-body" data-wave-two hidden>
+        <div class="vg-toolbar"><h2>Wave 2 setup</h2><span class="vg-chip vg-chip-ok">Check-in open</span></div>
+        <p class="vg-muted">2×2 Round 1 · 8 approved entries</p>
+        <div class="vg-toolbar">
+          <label class="vg-wave">Stations <select data-stations><option>4</option><option>5</option><option>6</option></select></label>
+          <label class="vg-wave">Scramblers per group <select data-scramblers><option>1</option><option>2</option></select></label>
+        </div>
+        <details><summary>Trusted scramblers</summary><p class="vg-muted vg-small">Taylor Ellis, Quinn Avery, Jordan Kim, Devon Reed</p></details>
+        <div class="vg-actions"><button class="vg-primary" type="button" data-action="generate">Preview groups</button></div>
+        <p class="vg-muted vg-small" role="status" data-wave-preview hidden></p>
+      </div>
+    </div>
+
+    <div class="vg-board" data-panel="projector" hidden>
+      <div class="vg-toolbar">
+        <h2>Projector view</h2>
+        <div class="vg-status-line">
+          <span class="vg-chip vg-chip-live">Live schedule</span>
+          <label class="vg-wave">Show <select data-projector-group>
+            <option value="1">Group 1</option><option value="2" selected>Group 2</option><option value="3">Group 3</option>
+          </select></label>
+          <button type="button" data-action="preview-pdf">Preview PDF</button>
+        </div>
+      </div>
+      <section class="vg-panel vg-sheet" data-projector-sheet aria-label="Live group slide">
+        <header class="vg-sheet-title"><h2 data-slide-title>Group 2</h2><span data-slide-event>3×3 · Round 1 · Running</span></header>
+        <div class="vg-sheet-content">
+          <table aria-label="Station assignments"><thead><tr><th scope="col">Station</th><th scope="col">Solver</th><th scope="col">Judge</th></tr></thead><tbody data-slide-rows></tbody></table>
+        </div>
+        <footer class="vg-sheet-foot"><span data-slide-scrambler></span><span class="vg-muted vg-small" data-slide-revision>Revision 3</span></footer>
+      </section>
+    </div>
+
+    <div class="vg-board" data-panel="pdf" hidden>
+      <div class="vg-toolbar">
+        <div><h2>Group slides PDF</h2><p class="vg-muted vg-small" data-pdf-note>Showing the exported revision</p></div>
+        <div class="vg-actions">
+          <button type="button" data-action="refresh-pdf" disabled>Preview current revision</button>
+          <button type="button" data-view="projector">Back to projector</button>
+        </div>
+      </div>
+      <section class="vg-panel vg-sheet vg-pdf" data-pdf-sheet aria-label="PDF preview for Group 3">
+        <header class="vg-sheet-title"><h2 data-slide-title>Group 3</h2><span data-slide-event>3×3 · Round 1</span></header>
+        <div class="vg-sheet-content">
+          <table aria-label="Exported station assignments"><thead><tr><th scope="col">Station</th><th scope="col">Solver</th><th scope="col">Judge</th></tr></thead><tbody data-slide-rows></tbody></table>
+        </div>
+        <footer class="vg-sheet-foot"><span data-slide-scrambler></span><span class="vg-muted vg-small" data-slide-revision>Slide 3 of 3 · Revision 3</span></footer>
+      </section>
+    </div>
+
+    <p class="vg-small vg-muted" role="status" data-announcement hidden></p>
+  </div>
+</section>
+
+<script>
+(() => {
+  const root = document.getElementById("vt-grouping");
+  if (!root) return;
+  const find = (selector) => root.querySelector(selector);
+  const viewButtons = [...root.querySelectorAll(".vg-nav [data-view]")];
+  const panels = [...root.querySelectorAll("[data-panel]")];
+  const adminChrome = [...root.querySelectorAll("[data-admin-chrome]")];
+  const saved = window.openai?.widgetState?.privateContent;
+  const judges = [
+    { id: 24, name: "Jordan Kim", schoolId: "jkim24", detail: "Available · 3×3 competitor", available: true },
+    { id: 37, name: "Cameron Ellis", schoolId: "cellis37", detail: "Available · 3×3 competitor", available: true },
+    { id: 12, name: "Riley Brooks", schoolId: "rbrooks12", detail: "Judging Station 2 in Group 3", available: false },
+    { id: 51, name: "Taylor Ellis", schoolId: "tellis51", detail: "Scrambling for Group 3", available: false },
+  ];
+  const canJudge = (id) => judges.some((judge) => judge.id === id && judge.available);
+  const state = {
+    view: ["checkin", "groups", "projector", "pdf"].includes(saved?.view) ? saved.view : "groups",
+    wave: saved?.wave === "2" ? "2" : "1",
+    reviewing: false,
+    choosingJudge: false,
+    judgeId: canJudge(saved?.judgeId) ? saved.judgeId : 24,
+    approved: saved?.approved === true,
+    group: ["1", "2", "3"].includes(saved?.group) ? saved.group : "2",
+    pdfUpdated: saved?.approved === true && saved?.pdfUpdated === true,
+  };
+  const groups = {
+    "1": { status: "Finished", scrambler: "Quinn Avery", seats: [["Maya Chen", "Riley Brooks"], ["Alex Lee", "Harper Singh"], ["Casey Tran", "Sam Diaz"], ["Jordan Kim", "Cameron Ellis"]] },
+    "2": { status: "Running", scrambler: "Devon Reed", seats: [["Riley Brooks", "Maya Chen"], ["Sam Diaz", "Avery Cole"], ["Quinn Avery", "Alex Lee"], ["Cameron Ellis", "Casey Tran"]] },
+    "3": { status: "Upcoming", scrambler: "Taylor Ellis", seats: [["Avery Cole", "Maya Chen"], ["Harper Singh", "Riley Brooks"], ["Morgan Wu", "Sam Diaz"]] },
+  };
+
+  function setText(selector, value) {
+    find(selector).textContent = value;
+  }
+
+  function setVisible(selector, visible) {
+    find(selector).hidden = !visible;
+  }
+
+  function renderJudgeResults() {
+    const search = find("[data-judge-search]").value.trim().toLowerCase();
+    const matches = judges.filter((judge) => (judge.name + " " + judge.schoolId).toLowerCase().includes(search));
+    const results = matches.map((judge) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.judgeId = String(judge.id);
+      button.disabled = !judge.available;
+      button.setAttribute("aria-pressed", String(state.judgeId === judge.id));
+      button.textContent = judge.name;
+      const detail = document.createElement("span");
+      detail.textContent = judge.detail;
+      button.append(detail);
+      return button;
+    });
+    find("[data-judge-results]").replaceChildren(...results);
+    setText("[data-judge-count]", matches.length === 0 ? "No competitors match." : "");
+  }
+
+  function renderSlide(sheet, groupNumber, approved, isPdf) {
+    const group = groups[groupNumber];
+    const seats = [...group.seats];
+    if (groupNumber === "3" && approved) {
+      seats.push(["Jamie Park", judges.find((judge) => judge.id === state.judgeId).name]);
+    }
+    sheet.querySelector("[data-slide-title]").textContent = "Group " + groupNumber;
+    sheet.querySelector("[data-slide-event]").textContent = "3×3 · Round 1" + (isPdf ? "" : " · " + group.status);
+    sheet.querySelector("[data-slide-scrambler]").textContent = "Scrambler · " + group.scrambler;
+    sheet.querySelector("[data-slide-revision]").textContent =
+      (isPdf ? "Slide 3 of 3 · " : "") + "Revision " + (approved ? "4" : "3");
+    const rows = seats.map(([solver, judge], index) => {
+      const row = document.createElement("tr");
+      for (const text of [String(index + 1), solver, judge]) {
+        const cell = document.createElement("td");
+        cell.textContent = text;
+        row.append(cell);
+      }
+      return row;
+    });
+    sheet.querySelector("[data-slide-rows]").replaceChildren(...rows);
+  }
+
+  function render() {
+    const activeTab = state.view === "pdf" ? "projector" : state.view;
+    for (const button of viewButtons) button.setAttribute("aria-pressed", String(button.dataset.view === activeTab));
+    for (const panel of panels) panel.hidden = panel.dataset.panel !== state.view;
+    for (const element of adminChrome) element.hidden = state.view === "competitor";
+    find("[data-wave]").value = state.wave;
+    setVisible("[data-wave-one]", state.wave === "1");
+    setVisible("[data-wave-one-meta]", state.wave === "1");
+    setVisible("[data-wave-two]", state.wave === "2");
+    setText("[data-live-revision]", state.approved ? "Revision 4" : "Revision 3");
+    setText("[data-solvers]", state.approved ? "4 / 4" : "3 / 4");
+    setText("[data-judges]", state.approved ? "4 / 4" : "3 / 3");
+    const groupRow = find('[data-group-row="3"]');
+    groupRow.classList.toggle("vg-row-highlight", state.reviewing);
+    groupRow.classList.toggle("vg-row-applied", state.approved);
+    find("[data-queue]").classList.toggle("vg-reviewed", state.approved);
+    for (const [selector, pending, approved] of [
+      ["[data-entry-status]", "Pending", "Group 3"],
+      ["[data-queue-status]", "1 pending", "All reviewed"],
+    ]) {
+      const badge = find(selector);
+      badge.textContent = state.approved ? approved : pending;
+      badge.classList.toggle("vg-chip-warn", !state.approved);
+      badge.classList.toggle("vg-chip-ok", state.approved);
+    }
+    setVisible("[data-checkin-review]", !state.approved);
+    setVisible("[data-pending-entry]", !state.approved && !state.reviewing);
+    setVisible("[data-review]", !state.approved && state.reviewing);
+    setVisible("[data-approved-entry]", state.approved);
+    const judge = judges.find((candidate) => candidate.id === state.judgeId);
+    setText("[data-selected-judge]", "Judge · " + judge.name);
+    setText("[data-approved-judge]", "Station 4 · Judge " + judge.name);
+    setVisible("[data-judge-picker]", state.choosingJudge && state.reviewing);
+    find('[data-action="change-judge"]').setAttribute("aria-expanded", String(state.choosingJudge));
+    if (state.choosingJudge) renderJudgeResults();
+    find('[data-action="review"]').setAttribute("aria-expanded", String(state.reviewing));
+    find("[data-projector-group]").value = state.group;
+    renderSlide(find("[data-projector-sheet]"), state.group, state.approved, false);
+    renderSlide(find("[data-pdf-sheet]"), "3", state.pdfUpdated, true);
+    const stale = state.approved && !state.pdfUpdated;
+    setText("[data-pdf-note]", stale ? "Exported revision 3 · Live schedule is revision 4" : "PDF preview matches the live revision");
+    find('[data-action="refresh-pdf"]').disabled = !stale;
+  }
+
+  function save() {
+    window.openai?.setWidgetState?.({
+      modelContent: { view: state.view, lateEntryAssigned: state.approved, pdfRevision: state.pdfUpdated ? 4 : 3 },
+      privateContent: { ...state, reviewing: false, choosingJudge: false },
+    })?.catch(() => {});
+  }
+
+  function announce(message) {
+    const status = find("[data-announcement]");
+    status.hidden = !message;
+    status.textContent = message;
+  }
+
+  async function copyCheckin(action) {
+    const status = find("[data-share-status]");
+    const urlField = find("[data-checkin-url]");
+    status.hidden = false;
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+      if (action === "copy-link") {
+        await navigator.clipboard.writeText(urlField.value);
+        status.textContent = "Sample link copied.";
+      } else {
+        const source = find("[data-qr]").src;
+        const png = Uint8Array.from(atob(source.split(",")[1]), (char) => char.charCodeAt(0));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": new Blob([png], { type: "image/png" }) })]);
+        status.textContent = "Sample QR image copied.";
+      }
+    } catch {
+      if (action === "copy-link") urlField.select();
+      status.textContent = action === "copy-link"
+        ? "Copy the selected link to share it."
+        : "Right-click or press and hold the QR image to copy it.";
+    }
+  }
+
+  root.addEventListener("click", (event) => {
+    if (event.target.closest("[data-open-checkin]")) {
+      event.preventDefault();
+      state.view = "competitor";
+      render();
+      find("[data-school-id]").focus();
+      return;
+    }
+    const button = event.target.closest("button");
+    if (!button || button.disabled || button.type === "submit") return;
+    const { view, action, judgeId } = button.dataset;
+    announce("");
+    if (view) {
+      state.view = view;
+    } else if (action === "share-checkin") {
+      const detail = find("[data-checkin-share]");
+      detail.hidden = !detail.hidden;
+      button.setAttribute("aria-expanded", String(!detail.hidden));
+      return;
+    } else if (action === "copy-link" || action === "copy-qr") {
+      void copyCheckin(action);
+      return;
+    } else if (action === "review" || action === "go-review") {
+      state.view = "groups";
+      state.wave = "1";
+      state.reviewing = true;
+    } else if (action === "cancel-review") {
+      state.reviewing = false;
+      state.choosingJudge = false;
+      state.judgeId = 24;
+    } else if (action === "change-judge") {
+      state.choosingJudge = !state.choosingJudge;
+      if (state.choosingJudge) find("[data-judge-search]").value = "";
+    } else if (judgeId && canJudge(Number(judgeId))) {
+      state.judgeId = Number(judgeId);
+      state.choosingJudge = false;
+    } else if (action === "approve") {
+      state.approved = true;
+      state.reviewing = false;
+      state.choosingJudge = false;
+      state.group = "3";
+      announce("Group 3 updated. The live schedule is now revision 4.");
+    } else if (action === "show-group") {
+      state.group = "3";
+      state.view = "projector";
+    } else if (action === "preview-pdf") {
+      state.view = "pdf";
+    } else if (action === "refresh-pdf") {
+      state.pdfUpdated = true;
+      announce("PDF preview updated to revision 4.");
+    } else if (action === "generate") {
+      const stations = Number(find("[data-stations]").value);
+      const scramblers = find("[data-scramblers]").value;
+      setText("[data-wave-preview]", "2 proposed groups · " + stations + " stations · " + scramblers + " " + (scramblers === "1" ? "scrambler" : "scramblers") + " per group");
+      setVisible("[data-wave-preview]", true);
+      return;
+    }
+    render();
+    if (action === "review" || action === "go-review") find("[data-target-group]").focus();
+    if (action === "cancel-review") find('[data-action="review"]').focus();
+    if (action === "change-judge" && state.choosingJudge) find("[data-judge-search]").focus();
+    if (judgeId) find('[data-action="change-judge"]').focus();
+    if (action === "approve") find('[data-action="show-group"]').focus();
+    save();
+  });
+
+  root.addEventListener("input", (event) => {
+    if (event.target.matches("[data-judge-search]")) renderJudgeResults();
+  });
+
+  root.addEventListener("change", (event) => {
+    if (event.target.matches("[data-wave]")) state.wave = event.target.value;
+    else if (event.target.matches("[data-projector-group]")) state.group = event.target.value;
+    else if (event.target.matches("[data-checkin-wave]")) {
+      setText("[data-checkin-policy]", event.target.value === "1"
+        ? "Wave 1 is running. An admin will review your entry."
+        : "Wave 2 check-in is open.");
+      setVisible("[data-checkin-result]", false);
+      return;
+    }
+    else if (event.target.matches("[data-stations], [data-scramblers]")) {
+      setVisible("[data-wave-preview]", false);
+      return;
+    } else return;
+    render();
+    save();
+  });
+
+  find("[data-checkin-form]").addEventListener("submit", (event) => {
+    event.preventDefault();
+    setText("[data-checkin-result]", find("[data-checkin-wave]").value === "1"
+      ? "Sample entry submitted. Pending admin approval."
+      : "Sample entry submitted. You’re checked in for Wave 2.");
+    setVisible("[data-checkin-result]", true);
+  });
+
+  window.addEventListener("openai:set_globals", (event) => {
+    const incoming = event.detail?.globals?.widgetState?.privateContent;
+    if (!incoming) return;
+    if (["checkin", "groups", "projector", "pdf"].includes(incoming.view)) state.view = incoming.view;
+    if (incoming.wave === "1" || incoming.wave === "2") state.wave = incoming.wave;
+    if (["1", "2", "3"].includes(incoming.group)) state.group = incoming.group;
+    state.judgeId = canJudge(incoming.judgeId) ? incoming.judgeId : 24;
+    state.approved = incoming.approved === true;
+    state.pdfUpdated = state.approved && incoming.pdfUpdated === true;
+    render();
+  });
+
+  render();
+})();
+</script>

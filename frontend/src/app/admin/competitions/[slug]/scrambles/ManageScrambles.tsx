@@ -6,8 +6,10 @@ import AdminEditDialog from "../../../_components/AdminEditDialog";
 import CompetitionRoundPicker from "../../_components/CompetitionRoundPicker";
 import roundRequestError from "../../_lib/roundRequestError";
 import type { SolveRound } from "../../_lib/solves";
+import ScrambleSheet from "./ScrambleSheet";
 
 type Group = { id: number; number: number; wave_number: number; wave_name: string };
+export type ScrambleGroup = Group & { roundIds: number[] };
 type ScrambleSet = {
     id: number;
     number: number;
@@ -38,13 +40,71 @@ function assignmentFilter(set: ScrambleSet) {
     return set.group_label ? `custom-${set.id}` : "round";
 }
 
-export default function ManageScrambles({ competitionId, rounds }: { competitionId: number; rounds: SolveRound[] }) {
+export default function ManageScrambles({ competitionId, rounds, groups, initialGroup }: {
+    competitionId: number; rounds: SolveRound[]; groups: ScrambleGroup[]; initialGroup?: number;
+}) {
+    const [groupId, setGroupId] = useState<number | null>(initialGroup ?? groups[0]?.id ?? null);
+    const group = groups.find(option => option.id === groupId);
+    const waves = [...new Map(groups.map(option => [option.wave_number, option.wave_name]))];
+    return (
+        <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50 text-slate-900 shadow-md shadow-black/20">
+            {groups.length > 0 && <div className="grid gap-3 border-b border-slate-200 px-4 py-4 sm:grid-cols-2 sm:px-6">
+                <label className="block min-w-0 text-sm font-semibold">
+                    Wave
+                    <select className={selectClass} value={group?.wave_number ?? "manual"}
+                        onChange={event => setGroupId(groups.find(option => String(option.wave_number) === event.target.value)?.id ?? null)}>
+                        {waves.map(([number, name]) => (
+                            <option key={number} value={number}>Wave {number}{name ? ` · ${name}` : ""}</option>
+                        ))}
+                        <option value="manual">Round-only or custom sets</option>
+                    </select>
+                </label>
+                {group && <label className="block min-w-0 text-sm font-semibold">
+                    Group
+                    <select className={selectClass} value={group.id} onChange={event => setGroupId(Number(event.target.value))}>
+                        {groups.filter(option => option.wave_number === group.wave_number).map(option => (
+                            <option key={option.id} value={option.id}>Group {option.number}</option>
+                        ))}
+                    </select>
+                </label>}
+            </div>}
+            {group ? <GroupScrambles key={group.id} competitionId={competitionId}
+                rounds={rounds.filter(round => group.roundIds.includes(round.id))} group={group} />
+                : <ManualScrambles competitionId={competitionId} rounds={rounds} />}
+        </div>
+    );
+}
+
+function GroupScrambles({ competitionId, rounds, group }: { competitionId: number; rounds: SolveRound[]; group: Group }) {
+    const [roundId, setRoundId] = useState(rounds[0]?.id);
+    const round = rounds.find(option => option.id === roundId) ?? rounds[0];
+    if (!round) return <p className="px-4 py-5 text-sm text-slate-600 sm:px-6">This group has no events.</p>;
+
+    return (
+        <>
+            {rounds.length > 1 && <div className="border-b border-slate-200 px-4 py-3 sm:px-6">
+                <label className="block max-w-md text-sm font-semibold">
+                    Event in this group
+                    <select className={selectClass} value={round.id} onChange={event => setRoundId(Number(event.target.value))}>
+                        {rounds.map(option => <option key={option.id} value={option.id}>
+                            {option.event} · Round {option.number}
+                        </option>)}
+                    </select>
+                </label>
+            </div>}
+            <RoundScrambles key={round.id} round={round} group={group}
+                path={`/competitions/admin/${competitionId}/rounds/${round.id}/scrambles`} />
+        </>
+    );
+}
+
+function ManualScrambles({ competitionId, rounds }: { competitionId: number; rounds: SolveRound[] }) {
     const [event, setEvent] = useState(rounds[0].event);
     const [roundId, setRoundId] = useState<number | null>(rounds[0].id);
     const round = rounds.find(option => option.id === roundId);
     return (
-        <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50 text-slate-900 shadow-md shadow-black/20">
-            <div className="border-b border-slate-200 px-5 py-5 sm:px-8">
+        <>
+            <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
                 <CompetitionRoundPicker rounds={rounds} event={event} roundId={roundId}
                     onEventChange={name => {
                         setEvent(name);
@@ -55,11 +115,11 @@ export default function ManageScrambles({ competitionId, rounds }: { competition
                 <RoundScrambles key={round.id} round={round}
                     path={`/competitions/admin/${competitionId}/rounds/${round.id}/scrambles`} />
             )}
-        </div>
+        </>
     );
 }
 
-function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
+function RoundScrambles({ path, round, group }: { path: string; round: SolveRound; group?: Group }) {
     const [data, setData] = useState<ScrambleData | null>(null);
     const [filter, setFilter] = useState("all");
     const [action, setAction] = useState<Action | null>(null);
@@ -84,12 +144,13 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
         setRevision(previous => previous + 1);
     }
 
-    const selectedGroup = data?.groups.find(group => String(group.id) === filter);
-    const customSets = data?.sets.filter(set => set.group_id === null && set.group_label) ?? [];
+    const manualSets = data?.sets.filter(set => set.group_id === null) ?? [];
+    const customSets = manualSets.filter(set => set.group_label);
     const selectedCustom = customSets.some(set => assignmentFilter(set) === filter);
-    const activeFilter = filter === "round" || selectedGroup || selectedCustom ? filter : "all";
-    const visible = data?.sets.filter(set => activeFilter === "all" || assignmentFilter(set) === activeFilter);
-    const groupHasSet = selectedGroup && visible && visible.length > 0;
+    const activeFilter = filter === "round" || selectedCustom ? filter : "all";
+    const visible = group ? data?.sets.filter(set => set.group_id === group.id)
+        : manualSets.filter(set => activeFilter === "all" || assignmentFilter(set) === activeFilter);
+    const groupHasSet = !!group && !!visible?.length;
 
     function finish(saved?: ScrambleSet) {
         const previousSet = action && action.kind !== "add" ? action.set : undefined;
@@ -99,74 +160,58 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
             if (saved) sets.push(saved);
             return { ...previous, sets: sets.sort((a, b) => a.number - b.number) };
         });
-        if (saved && activeFilter !== "all") setFilter(assignmentFilter(saved));
+        if (!group && saved && activeFilter !== "all") setFilter(assignmentFilter(saved));
         setNotice(saved ? "Scramble set saved." : "Scramble set removed.");
         setAction(null);
     }
 
     return (
-        <div className="space-y-5 px-5 py-5 sm:px-8">
-            <div className="flex flex-wrap items-end gap-3">
-                {data && (data.groups.length > 0 || customSets.length > 0) && (
+        <div className="space-y-3 px-4 py-4 sm:px-6">
+            {(!group || (data && !groupHasSet) || error) && <div className="flex flex-wrap items-end gap-3">
+                {!group && customSets.length > 0 && (
                     <label className="min-w-0 flex-1 text-sm font-semibold">
                         Show sets for
                         <select className={selectClass} value={activeFilter}
                             onChange={event => { setFilter(event.target.value); setNotice(""); }}>
                             <option value="all">All sets</option>
                             <option value="round">Round only (no group)</option>
-                            {data.groups.map(group => <option key={group.id} value={group.id}>{groupLabel(group)}</option>)}
                             {customSets.map(set => <option key={set.id} value={assignmentFilter(set)}>{set.group_label}</option>)}
                         </select>
                     </label>
                 )}
-                <button type="button" onClick={reload} className={`${secondaryButton} ml-auto`}>Reload</button>
+                {(!group || error) && <button type="button" onClick={reload} className={`${secondaryButton} ml-auto`}>{error ? "Retry" : "Reload"}</button>}
                 <button type="button" onClick={() => setAction({ kind: "add" })} disabled={!data || !!groupHasSet}
                     className="min-h-10 rounded-sm bg-orange-300 px-4 text-sm font-semibold enabled:hover:bg-admin-button-hover disabled:opacity-50">
                     Add scramble set
                 </button>
-            </div>
-            {groupHasSet && <p className="text-sm text-slate-600">This group already has a set. Use Edit to change it.</p>}
+            </div>}
             {notice && <p role="status" className="text-sm text-emerald-800">{notice}</p>}
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
             {!data && !error && <p role="status" className="text-sm text-slate-600">Loading scramble sets…</p>}
-            {visible?.length === 0 && <p className="text-sm text-slate-600">No scramble sets in this view.</p>}
+            {data && visible?.length === 0 && <p className="text-sm text-slate-600">
+                {group ? `No ${round.event} scramble set for this group yet.` : "No scramble sets in this view."}
+            </p>}
             {data && (
                 <div className="space-y-4">
                     {visible?.map(set => (
-                        <section key={set.id} className="rounded-sm border border-slate-200 bg-white p-4 sm:p-5">
-                            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-                                <div>
-                                    <h2 className="font-bold">Set {set.number}</h2>
-                                    <p className="mt-1 text-sm text-slate-600">{assignmentLabel(set, data.groups)}</p>
-                                </div>
-                                <div className="flex gap-2">
+                        <ScrambleSheet key={set.id} event={round.event}
+                            title={group ? round.event : assignmentLabel(set, data.groups)}
+                            subtitle={group ? `${groupLabel(group)} · Round ${round.number}` : `Set ${set.number} · ${round.event} · Round ${round.number}`}
+                            scrambles={set.scrambles} extras={set.extra_scrambles} showDiagrams={!!group || visible.length === 1}
+                            actions={<>
+                                    {group && <button type="button" className={secondaryButton} onClick={reload}>Reload</button>}
                                     <button type="button" className={secondaryButton} aria-label={`Edit set ${set.number}`}
                                         onClick={() => setAction({ kind: "edit", set })}>Edit</button>
                                     <button type="button" className="min-h-10 rounded-sm px-3 text-sm font-semibold text-red-700 hover:bg-red-50"
                                         aria-label={`Remove set ${set.number}`} onClick={() => setAction({ kind: "remove", set })}>Remove set</button>
-                                </div>
-                            </header>
-                            <ScramblePreview title="Scrambles" lines={set.scrambles} />
-                            {set.extra_scrambles.length > 0 && <ScramblePreview title="Extra scrambles" lines={set.extra_scrambles} />}
-                        </section>
+                            </>} />
                     ))}
                 </div>
             )}
             {action && data && (
                 <ScrambleDialog action={action} path={path} data={data} round={round}
-                    initialGroup={selectedGroup?.id ?? null} onClose={() => setAction(null)} onSaved={finish} />
+                    initialGroup={group?.id ?? null} onClose={() => setAction(null)} onSaved={finish} />
             )}
-        </div>
-    );
-}
-
-function ScramblePreview({ title, lines }: { title: string; lines: string[] }) {
-    return (
-        <div className="mt-4">
-            <h3 className="text-sm font-semibold">{title}</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-7 text-sm">
-                {lines.map((line, index) => <li key={index} className="whitespace-pre-wrap break-words pl-1">{line}</li>)}
-            </ol>
         </div>
     );
 }

@@ -6,14 +6,14 @@ import AdminEditDialog from "../../../_components/AdminEditDialog";
 
 const confirmationCounts = {
     solves: "Solves to delete",
-    people_affected: "People affected",
+    competitors_with_solves: "Competitors with solves",
+    check_ins: "Check-ins",
 } as const;
 
 const reviewCounts = {
     ...confirmationCounts,
     rounds: "Event rounds",
     scramble_sets: "Scramble sets",
-    check_ins: "Check-ins",
     scrambler_approvals: "Scrambler approvals",
     waves: "Waves",
     wave_entries: "Wave entries",
@@ -24,7 +24,7 @@ const reviewCounts = {
 type DeletionSummary = {
     name: string;
     is_published: boolean;
-    counts: Record<Exclude<keyof typeof reviewCounts, "people_affected">, number> & { people_affected?: number };
+    counts: Record<keyof typeof reviewCounts, number>;
     version: string;
 };
 
@@ -136,8 +136,7 @@ function DeletionDialog({ competitionId, onClose }: { competitionId: number; onC
                         </label>
                     ) : (
                         <p className="text-sm text-slate-600">
-                            Each person with a solve, check-in, wave entry, scrambler approval, or group assignment counts once.
-                            {" "}Competitor profiles and results from other competitions are kept.
+                            Check-ins and scored results are counted separately. Competitor profiles and results from other competitions are kept.
                         </p>
                     )}
                 </div>

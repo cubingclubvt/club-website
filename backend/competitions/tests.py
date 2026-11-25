@@ -150,14 +150,12 @@ class CompetitionAdminTests(TestCase):
         path = reverse("admin_edit_competitor", args=[spare.pk])
         version = {"updated_at": spare.updated_at.isoformat()}
         self.assertIn(APIClient().delete(path, version, format="json").status_code, (401, 403))
-        attendance = CompetitionAttendance.objects.create(competition=self.competition, competitor=spare)
-        self.assertEqual(admin.delete(path, version, format="json").status_code, 409)
-        self.assertTrue(CompetitionAttendance.objects.filter(pk=attendance.pk).exists())
-        attendance.delete()
+        attendance = CompetitionAttendance.objects.create(competition=self.competition, display_name="Alex Lee")
         spare.save()
         self.assertEqual(admin.delete(path, version, format="json").status_code, 409)
         self.assertEqual(admin.delete(path, {"updated_at": spare.updated_at.isoformat()}, format="json").status_code, 204)
         self.assertFalse(Competitor.objects.filter(pk=spare.pk).exists())
+        self.assertTrue(CompetitionAttendance.objects.filter(pk=attendance.pk).exists())
 
     def test_add_result_requires_all_times_and_rejects_duplicate_competitors(self):
         admin = APIClient()
@@ -258,22 +256,21 @@ class CompetitionAdminTests(TestCase):
         competition.save(update_fields=["is_published"])
         round_obj = competition.rounds.get()
         round_obj.solves.create(competitor=self.competitor, solve_number=2, solve_time=timedelta(0))
-        attendance = CompetitionAttendance.objects.create(competition=competition, competitor=self.competitor)
-        approval = CompetitionScrambler.objects.create(competition=competition, event=self.event, competitor=self.competitor)
+        attendance = competition.attendance.create(display_name="Maya Chen")
+        approval = attendance.scrambler_approvals.create(event=self.event)
         wave = CompetitionWave.objects.create(competition=competition, number=1)
         wave.allowed_rounds.add(round_obj)
-        entry = wave.entries.create(competition_round=round_obj, competitor=self.competitor)
+        entry = wave.entries.create(competition_round=round_obj, attendee=attendance)
         group = wave.groups.create(number=1)
-        assignment = group.assignments.create(competition_round=round_obj, competitor=self.competitor, role="solver")
+        assignment = group.assignments.create(competition_round=round_obj, attendee=attendance, role="solver")
         scramble = round_obj.scramble_sets.create(number=1, group=group, scrambles=["R U2"], generator_name="manual")
-        attendee, scrambler, entrant, judge, other_competitor = Competitor.objects.bulk_create([
-            Competitor(first_name=name, last_name="Lee", school_id=name.lower(), grade=1)
-            for name in ("Alex", "Blake", "Casey", "Dana", "Elliot")
+        _, scrambler, entrant, judge = CompetitionAttendance.objects.bulk_create([
+            CompetitionAttendance(competition=competition, display_name=name)
+            for name in ("Maya Chen", "Blake Lee", "Casey Lee", "Dana Lee")
         ])
-        competition.attendance.create(competitor=attendee)
-        competition.scrambler_approvals.create(event=self.event, competitor=scrambler)
-        wave.entries.create(competition_round=round_obj, competitor=entrant)
-        group.assignments.create(competition_round=round_obj, competitor=judge, role="judge")
+        scrambler.scrambler_approvals.create(event=self.event)
+        wave.entries.create(competition_round=round_obj, attendee=entrant)
+        group.assignments.create(attendee=judge, role="judge")
 
         other = Competition.objects.create(
             name="Other meet", location="Club room", start_time=competition.start_time,
@@ -281,7 +278,7 @@ class CompetitionAdminTests(TestCase):
         )
         other_round = other.rounds.create(event=self.event, number=1, round_type=round_obj.round_type)
         kept_solve = other_round.solves.create(competitor=self.competitor, solve_number=1, solve_time=timedelta(seconds=8))
-        other_round.solves.create(competitor=other_competitor, solve_number=1, solve_time=timedelta(seconds=9))
+        other.attendance.create(display_name="Elliot Lee")
         path = reverse("admin_competition_deletion", args=[competition.pk])
         self.assertIn(guest.get(path).status_code, (401, 403))
         review = admin.get(path)
@@ -290,7 +287,7 @@ class CompetitionAdminTests(TestCase):
         summary = review.json()
         self.assertTrue(summary["is_published"])
         self.assertEqual(summary["counts"], {
-            "rounds": 1, "solves": 2, "people_affected": 5, "scramble_sets": 1, "check_ins": 2,
+            "rounds": 1, "solves": 2, "competitors_with_solves": 1, "scramble_sets": 1, "check_ins": 5,
             "scrambler_approvals": 2, "waves": 1, "wave_entries": 2, "groups": 1, "group_assignments": 2,
         })
         payload = {"name": competition.name, "version": summary["version"]}

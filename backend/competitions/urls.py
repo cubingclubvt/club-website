@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import grouping_scrambles, grouping_views, views
 
 urlpatterns = [
         path("admin/", views.admin_competitions, name="admin_competitions"),
@@ -12,6 +12,10 @@ urlpatterns = [
         path("admin/<int:competition_id>/details", views.update_competition_details, name="update_competition_details"),
         path("admin/<int:competition_id>/publication", views.update_competition_publication, name="update_competition_publication"),
         path("admin/<int:competition_id>/deletion", views.admin_competition_deletion, name="admin_competition_deletion"),
+        path("admin/<int:competition_id>/grouping", grouping_views.admin_grouping, name="admin_grouping"),
+        path("admin/<int:competition_id>/grouping/placements/<int:entry_id>", grouping_views.late_entry_placements, name="late_entry_placements"),
+        path("admin/<int:competition_id>/grouping/qr", grouping_views.check_in_qr, name="check_in_qr"),
+        path("admin/<int:competition_id>/grouping/scrambles", grouping_scrambles.group_scramble_sets, name="group_scramble_sets"),
         path("admin/solves/competitors", views.solve_competitors, name="solve_competitors"),
         path("admin/<int:competition_id>/rounds/<int:round_id>/solves", views.admin_round_solves, name="admin_round_solves"),
         path("admin/<int:competition_id>/rounds/<int:round_id>/solves/<int:solve_id>", views.admin_solve, name="admin_solve"),
@@ -19,6 +23,7 @@ urlpatterns = [
         path("admin/<int:competition_id>/rounds/<int:round_id>/scrambles", views.admin_round_scrambles, name="admin_round_scrambles"),
         path("admin/<int:competition_id>/rounds/<int:round_id>/scrambles/<int:set_id>", views.admin_scramble_set, name="admin_scramble_set"),
         path("create", views.create_competition, name="create_competition"),
+        path("check-in/<str:token>", grouping_views.competition_check_in, name="competition_check_in"),
         path("competitor/", views.all_competitors, name="all_competitors"),
         path("competitor/create", views.create_competitor, name="create_competitor"),
         path("competitor/<str:school_id>", views.competitor_detail, name="competitor"),
