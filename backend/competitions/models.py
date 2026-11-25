@@ -255,6 +255,7 @@ class ScrambleSet(models.Model):
     group = models.ForeignKey(
         CompetitionGroup, on_delete=models.SET_NULL, related_name="scramble_sets", null=True, blank=True,
     )
+    group_label = models.CharField(max_length=100, blank=True, default="", db_default="")
     number = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     scrambles = models.JSONField(default=list)
     extra_scrambles = models.JSONField(default=list, blank=True)
@@ -268,6 +269,10 @@ class ScrambleSet(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["competition_round", "number"], name="unique_round_scramble_set_number"),
             models.UniqueConstraint(fields=["group", "competition_round"], name="unique_group_round_scramble_set"),
+            models.CheckConstraint(
+                condition=models.Q(group__isnull=True) | models.Q(group_label=""),
+                name="scramble_label_requires_unlinked_set",
+            ),
         ]
 
     def clean(self):

@@ -6,7 +6,10 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import Competition, CompetitionAttendance, CompetitionRound, CompetitionWave, Competitor, Event, RoundType, ScrambleSet, Solve
+from .models import (
+    Competition, CompetitionAttendance, CompetitionGroup, CompetitionRound, CompetitionScrambler,
+    CompetitionWave, Competitor, Event, GroupAssignment, RoundType, ScrambleSet, Solve, WaveEntry,
+)
 
 
 class CompetitionAdminTests(TestCase):
@@ -28,6 +31,57 @@ class CompetitionAdminTests(TestCase):
             solve_time=timedelta(seconds=15),
         )
         cls.organizer = get_user_model().objects.create_user(username="organizer")
+
+    def test_create_competition_reports_field_errors_and_invalid_round_counts(self):
+        admin = APIClient()
+        admin.force_authenticate(user=self.organizer)
+        path = reverse("create_competition")
+        payload = {
+            "name": "New Club Meet", "location": "Club room", "official": True, "official_link": None,
+            "start_time": self.competition.start_time.isoformat(), "end_time": self.competition.end_time.isoformat(),
+            "events": [{"event-name": self.event.name, "Rounds": 3}], "competitors": [],
+        }
+        invalid_fields = (
+            ("name", "club-draft"),
+            ("name", "A" * 256),
+            ("location", ""),
+            ("end_time", (self.competition.start_time - timedelta(hours=1)).isoformat()),
+            ("official_link", "invalid"),
+            ("events", []),
+        )
+        for field, value in invalid_fields:
+            with self.subTest(field=field, value=value):
+                response = admin.post(path, {**payload, field: value}, format="json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(field, response.json())
+
+        for rounds in (0, 4, "1.5", "invalid"):
+            with self.subTest(rounds=rounds):
+                events = [{"event-name": self.event.name, "Rounds": rounds}]
+                response = admin.post(path, {**payload, "events": events}, format="json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(self.event.name, response.json()["events"])
+        self.assertEqual(Competition.objects.count(), 1)
+
+        response = admin.post(path, payload, format="json")
+        self.assertEqual(response.status_code, 201)
+        created = Competition.objects.get(pk=response.json()["id"])
+        self.assertFalse(created.is_published)
+        self.assertEqual(list(created.rounds.order_by("number").values_list("number", flat=True)), [1, 2, 3])
+
+    def test_create_competitor_reports_duplicate_school_id_and_invalid_grade(self):
+        admin = APIClient()
+        admin.force_authenticate(user=self.organizer)
+        path = reverse("create_competitor")
+        payload = {"first_name": "alex", "last_name": "lee", "school_id": "MAYA", "grade": 1.5}
+        response = admin.post(path, payload, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(set(response.json()), {"school_id", "grade"})
+        self.assertEqual(Competitor.objects.count(), 1)
+
+        response = admin.post(path, {**payload, "school_id": "alex", "grade": 2}, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["first_name"], "Alex")
 
     def test_competitor_roster_searches_all_pages_and_updates_by_id(self):
         admin = APIClient()
@@ -195,13 +249,119 @@ class CompetitionAdminTests(TestCase):
         self.assertTrue(Solve.objects.filter(pk=untouched.pk).exists())
 
 
+    def test_competition_deletion_requires_exact_name_and_cascades_only_its_data(self):
+        admin = APIClient()
+        admin.force_authenticate(user=self.organizer)
+        guest = APIClient()
+        competition = self.competition
+        competition.is_published = True
+        competition.save(update_fields=["is_published"])
+        round_obj = competition.rounds.get()
+        round_obj.solves.create(competitor=self.competitor, solve_number=2, solve_time=timedelta(0))
+        attendance = CompetitionAttendance.objects.create(competition=competition, competitor=self.competitor)
+        approval = CompetitionScrambler.objects.create(competition=competition, event=self.event, competitor=self.competitor)
+        wave = CompetitionWave.objects.create(competition=competition, number=1)
+        wave.allowed_rounds.add(round_obj)
+        entry = wave.entries.create(competition_round=round_obj, competitor=self.competitor)
+        group = wave.groups.create(number=1)
+        assignment = group.assignments.create(competition_round=round_obj, competitor=self.competitor, role="solver")
+        scramble = round_obj.scramble_sets.create(number=1, group=group, scrambles=["R U2"], generator_name="manual")
+        attendee, scrambler, entrant, judge, other_competitor = Competitor.objects.bulk_create([
+            Competitor(first_name=name, last_name="Lee", school_id=name.lower(), grade=1)
+            for name in ("Alex", "Blake", "Casey", "Dana", "Elliot")
+        ])
+        competition.attendance.create(competitor=attendee)
+        competition.scrambler_approvals.create(event=self.event, competitor=scrambler)
+        wave.entries.create(competition_round=round_obj, competitor=entrant)
+        group.assignments.create(competition_round=round_obj, competitor=judge, role="judge")
+
+        other = Competition.objects.create(
+            name="Other meet", location="Club room", start_time=competition.start_time,
+            end_time=competition.end_time, official=False,
+        )
+        other_round = other.rounds.create(event=self.event, number=1, round_type=round_obj.round_type)
+        kept_solve = other_round.solves.create(competitor=self.competitor, solve_number=1, solve_time=timedelta(seconds=8))
+        other_round.solves.create(competitor=other_competitor, solve_number=1, solve_time=timedelta(seconds=9))
+        path = reverse("admin_competition_deletion", args=[competition.pk])
+        self.assertIn(guest.get(path).status_code, (401, 403))
+        review = admin.get(path)
+        self.assertEqual(review.status_code, 200)
+        self.assertIn("no-store", review.headers["Cache-Control"])
+        summary = review.json()
+        self.assertTrue(summary["is_published"])
+        self.assertEqual(summary["counts"], {
+            "rounds": 1, "solves": 2, "people_affected": 5, "scramble_sets": 1, "check_ins": 2,
+            "scrambler_approvals": 2, "waves": 1, "wave_entries": 2, "groups": 1, "group_assignments": 2,
+        })
+        payload = {"name": competition.name, "version": summary["version"]}
+        self.assertIn(guest.delete(path, payload, format="json").status_code, (401, 403))
+        self.assertEqual(admin.delete(path, {"name": competition.name}, format="json").status_code, 400)
+        self.assertEqual(admin.delete(path, {**payload, "name": competition.name + " "}, format="json").status_code, 400)
+        self.assertTrue(Solve.objects.filter(competition_round=round_obj).exists())
+
+        changed_solve = round_obj.solves.get(solve_number=1)
+        changed_solve.solve_time = timedelta(seconds=16)
+        changed_solve.save(update_fields=["solve_time", "updated_at"])
+        stale = admin.delete(path, payload, format="json")
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual(stale.json()["summary"]["counts"]["solves"], 2)
+        response = admin.delete(path, {**payload, "version": stale.json()["summary"]["version"]}, format="json")
+        self.assertEqual(response.status_code, 204)
+
+        for model, pk in (
+            (Competition, competition.pk), (CompetitionRound, round_obj.pk), (Solve, changed_solve.pk),
+            (CompetitionAttendance, attendance.pk), (CompetitionScrambler, approval.pk), (CompetitionWave, wave.pk),
+            (WaveEntry, entry.pk), (CompetitionGroup, group.pk), (GroupAssignment, assignment.pk), (ScrambleSet, scramble.pk),
+        ):
+            self.assertFalse(model.objects.filter(pk=pk).exists())
+        self.assertFalse(Solve.objects.filter(competition_round_id=round_obj.pk).exists())
+        self.assertTrue(Competitor.objects.filter(pk=self.competitor.pk).exists())
+        self.assertTrue(Solve.objects.filter(pk=kept_solve.pk, competition_round__competition=other).exists())
+        self.assertEqual(guest.get(reverse("competition_info", args=["Club-Draft"])).status_code, 404)
+
+    def test_private_preview_matches_public_data_without_publishing(self):
+        round_obj = self.competition.rounds.get()
+        round_obj.scramble_sets.create(number=1, group_label="Group A", scrambles=["R U2"], generator_name="manual")
+        slug = "Club-Draft"
+        paths = [
+            (reverse("admin_preview_competition", args=[slug]), reverse("competition_info", args=[slug])),
+            (reverse("admin_preview_round", args=[slug, self.event.name, 1]), reverse("round", args=[slug, self.event.name, 1])),
+            (
+                reverse("admin_preview_scrambles", args=[slug, self.event.name, 1]),
+                reverse("round_scrambles", args=[slug, self.event.name, 1]),
+            ),
+        ]
+        admin = APIClient()
+        admin.force_authenticate(user=self.organizer)
+        guest = APIClient()
+        preview_data = []
+        for preview, public in paths:
+            self.assertIn(guest.get(preview).status_code, (401, 403))
+            self.assertEqual(guest.get(public).status_code, 404)
+            response = admin.get(preview)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("no-store", response.headers["Cache-Control"])
+            preview_data.append(response.json())
+
+        self.assertEqual(preview_data[0]["scramble_rounds"], [{"event": self.event.name, "round": 1}])
+        self.assertEqual(preview_data[1][0]["rank"], 1)
+        self.assertEqual(preview_data[2][0]["group_label"], "Group A")
+        self.competition.refresh_from_db()
+        self.assertFalse(self.competition.is_published)
+
+        self.competition.is_published = True
+        self.competition.save(update_fields=["is_published"])
+        preview_data[0]["is_published"] = True
+        for (_, public), expected in zip(paths, preview_data):
+            self.assertEqual(guest.get(public).json(), expected)
+
     def test_public_scrambles_follow_round_and_competition_visibility(self):
         round_obj = self.competition.rounds.get()
         other_round = self.competition.rounds.create(event=self.event, number=2, round_type=round_obj.round_type)
         wave = CompetitionWave.objects.create(competition=self.competition, number=1, name="Morning")
         wave.allowed_rounds.add(round_obj)
         group = wave.groups.create(number=2)
-        round_obj.scramble_sets.create(number=1, scrambles=["R U2"], generator_name="manual")
+        round_obj.scramble_sets.create(number=1, group_label="Group A", scrambles=["R U2"], generator_name="manual")
         round_obj.scramble_sets.create(
             number=2, group=group, scrambles=["F2 U"], extra_scrambles=["B L'"], generator_name="manual",
         )
@@ -217,10 +377,10 @@ class CompetitionAdminTests(TestCase):
         self.competition.save(update_fields=["is_published"])
         self.assertEqual(public.get(details).json()["scramble_rounds"], [{"event": self.event.name, "round": 1}])
         self.assertEqual(public.get(first).json(), [
-            {"number": 1, "group": None, "scrambles": ["R U2"], "extra_scrambles": []},
+            {"number": 1, "group": None, "group_label": "Group A", "scrambles": ["R U2"], "extra_scrambles": []},
             {
                 "number": 2, "group": {"number": 2, "wave_number": 1, "wave_name": "Morning"},
-                "scrambles": ["F2 U"], "extra_scrambles": ["B L'"],
+                "group_label": "", "scrambles": ["F2 U"], "extra_scrambles": ["B L'"],
             },
         ])
         self.assertEqual(public.get(second).json(), [])
@@ -250,6 +410,10 @@ class CompetitionAdminTests(TestCase):
         response = admin.post(path, payload, format="json")
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.json()["group_id"])
+        self.assertEqual(response.json()["group_label"], "")
+        self.assertEqual(admin.post(
+            path, {**payload, "group_id": mixed_group.pk, "group_label": "Group A"}, format="json",
+        ).status_code, 400)
         response = admin.post(path, {**payload, "group_id": mixed_group.pk}, format="json")
         self.assertEqual(response.status_code, 201)
         grouped = response.json()
@@ -276,6 +440,24 @@ class CompetitionAdminTests(TestCase):
         self.assertEqual(admin.delete(item, {"version": edited["version"]}, format="json").status_code, 204)
         self.assertEqual(first.scramble_sets.count(), 1)
         self.assertEqual(second.scramble_sets.count(), 1)
+
+    def test_manage_scrambles_saves_custom_labels_without_live_groups(self):
+        admin = APIClient()
+        admin.force_authenticate(user=self.organizer)
+        round_obj = self.competition.rounds.get()
+        path = reverse("admin_round_scrambles", args=[self.competition.pk, round_obj.pk])
+        self.assertEqual(admin.get(path).json()["groups"], [])
+        response = admin.post(path, {"group_label": " Group A ", "scrambles": ["R U2"]}, format="json")
+        self.assertEqual(response.status_code, 201)
+        custom_set = response.json()
+        self.assertEqual(custom_set["group_label"], "Group A")
+        self.assertIsNone(custom_set["group_id"])
+        item = reverse("admin_scramble_set", args=[self.competition.pk, round_obj.pk, custom_set["id"]])
+        response = admin.patch(item, {"version": custom_set["version"], "group_label": "Group B"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["group_label"], "Group B")
+        self.assertEqual(response.json()["scrambles"], ["R U2"])
+        self.assertEqual(admin.delete(item, {"version": custom_set["version"]}, format="json").status_code, 409)
 
     def test_edit_round_counts_preserves_used_rounds(self):
         admin = APIClient()

@@ -37,6 +37,7 @@ export default function CompetitionDetailsFields({ values, errors, onChange }: P
                     onChange={onChange}
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? `${inputId}-error` : undefined}
+                    aria-required="true"
                     className={`${inputClass} ${error ? "border-red-500 bg-red-50" : "border-gray-300 bg-white"}`}
                 />
                 {error && <p id={`${inputId}-error`} className="mt-1 text-sm text-red-600">{error}</p>}
@@ -65,6 +66,8 @@ export default function CompetitionDetailsFields({ values, errors, onChange }: P
                     name="official"
                     checked={values.official}
                     onChange={onChange}
+                    aria-invalid={errors.official ? true : undefined}
+                    aria-describedby={errors.official ? `${id}-official-error` : undefined}
                     className="h-4 w-4 justify-self-center rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <input
@@ -78,7 +81,8 @@ export default function CompetitionDetailsFields({ values, errors, onChange }: P
                     aria-describedby={errors.official_link ? `${id}-official-link-error` : undefined}
                     className={`h-12 w-full min-w-0 rounded-lg border px-3 text-black transition-colors focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 sm:px-4 ${errors.official_link ? "border-red-500 bg-red-50" : "border-gray-300 bg-white"}`}
                 />
-                {errors.official_link && <p id={`${id}-official-link-error`} className="col-span-2 text-sm text-red-600">{errors.official_link}</p>}
+                {errors.official && <p id={`${id}-official-error`} className="col-span-2 text-sm text-red-600">{errors.official}</p>}
+                {errors.official_link && <p id={`${id}-official-link-error`} className="col-start-2 text-sm text-red-600">{errors.official_link}</p>}
             </div>
         </>
     );

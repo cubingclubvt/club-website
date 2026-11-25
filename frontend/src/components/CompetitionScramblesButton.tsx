@@ -1,23 +1,24 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 
 type ScrambleSet = {
     number: number;
     group: { number: number; wave_number: number; wave_name: string } | null;
+    group_label?: string;
     scrambles: string[];
     extra_scrambles: string[];
 };
 
-type Props = { slug: string; event: string; round: number };
+type Props = { roundPath: string; event: string; round: number };
 
 export default function CompetitionScramblesButton(props: Props) {
     const [open, setOpen] = useState(false);
     return (
         <>
             <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)}
-                className="min-h-11 whitespace-nowrap rounded-sm bg-orange-300 px-4 text-sm font-semibold text-neutral-900 shadow-sm transition-colors hover:bg-orange-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-300">
+                className="min-h-11 cursor-pointer whitespace-nowrap rounded-sm border border-slate-500/60 bg-transparent px-4 text-sm font-medium text-slate-200 transition-colors hover:border-slate-300 hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-300">
                 View scrambles
             </button>
             {open && <ScramblesDialog {...props} onClose={() => setOpen(false)} />}
@@ -25,20 +26,26 @@ export default function CompetitionScramblesButton(props: Props) {
     );
 }
 
-function setLabel({ number, group }: ScrambleSet) {
-    if (group === null) return `Set ${number} · Round only`;
+function groupLabel({ number, group, group_label: customLabel }: ScrambleSet) {
+    if (group === null) return customLabel || `Round only · ${number}`;
     const wave = group.wave_name ? `Wave ${group.wave_number} (${group.wave_name})` : `Wave ${group.wave_number}`;
-    return `${wave} · Group ${group.number}`;
+    return `Group ${group.number} · ${wave}`;
 }
 
-function ScramblesDialog({ slug, event, round, onClose }: Props & { onClose: () => void }) {
+function isBackdrop(event: MouseEvent<HTMLDialogElement>) {
+    if (event.target !== event.currentTarget) return false;
+    const { left, top, right, bottom } = event.currentTarget.getBoundingClientRect();
+    return event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom;
+}
+
+function ScramblesDialog({ roundPath, event, round, onClose }: Props & { onClose: () => void }) {
     const dialog = useRef<HTMLDialogElement>(null);
+    const pressedBackdrop = useRef(false);
     const titleId = useId();
     const [sets, setSets] = useState<ScrambleSet[] | null>(null);
     const [selected, setSelected] = useState<number | null>(null);
     const [error, setError] = useState("");
     const [attempt, setAttempt] = useState(0);
-    const [copyMessage, setCopyMessage] = useState("");
     const currentSet = sets?.find(set => set.number === selected) ?? sets?.[0];
 
     useEffect(() => {
@@ -49,8 +56,7 @@ function ScramblesDialog({ slug, event, round, onClose }: Props & { onClose: () 
 
     useEffect(() => {
         let active = true;
-        const path = `/competitions/${encodeURIComponent(slug)}/${encodeURIComponent(event)}/${round}/scrambles`;
-        apiFetch(path, { cache: "no-store" }).then((data: ScrambleSet[]) => {
+        apiFetch(`${roundPath}/scrambles`, { cache: "no-store" }).then((data: ScrambleSet[]) => {
             if (active) setSets(data);
         }).catch((failure: unknown) => {
             if (active) setError(failure instanceof ApiError && failure.status === 404
@@ -58,23 +64,16 @@ function ScramblesDialog({ slug, event, round, onClose }: Props & { onClose: () 
                 : "Could not load scrambles.");
         });
         return () => { active = false; };
-    }, [slug, event, round, attempt]);
-
-    async function copySet() {
-        if (!currentSet) return;
-        const text = [currentSet.scrambles, currentSet.extra_scrambles]
-            .filter(lines => lines.length).map(lines => lines.join("\n")).join("\n\n");
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopyMessage("Scrambles copied.");
-        } catch {
-            setCopyMessage("Could not copy automatically. You can select and copy the text.");
-        }
-    }
+    }, [roundPath, attempt]);
 
     return (
         <dialog ref={dialog} aria-labelledby={titleId}
             onCancel={event => { event.preventDefault(); onClose(); }}
+            onPointerDown={event => { pressedBackdrop.current = isBackdrop(event); }}
+            onClick={event => {
+                if (pressedBackdrop.current && isBackdrop(event)) onClose();
+                pressedBackdrop.current = false;
+            }}
             className="m-auto max-h-[88dvh] w-11/12 max-w-2xl overflow-y-auto rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-xl backdrop:bg-black/65 sm:p-7">
             <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
                 <h2 id={titleId} className="text-xl font-bold sm:text-2xl">{event} · Round {round} scrambles</h2>
@@ -95,26 +94,15 @@ function ScramblesDialog({ slug, event, round, onClose }: Props & { onClose: () 
                 <div className="space-y-5 pt-5">
                     {sets && sets.length > 1 ? (
                         <label className="block text-sm font-semibold">
-                            Scramble set
-                            <select value={currentSet.number} onChange={change => {
-                                setSelected(Number(change.target.value));
-                                setCopyMessage("");
-                            }} className="mt-1 block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5">
-                                {sets.map(set => <option key={set.number} value={set.number}>{setLabel(set)}</option>)}
+                            Group
+                            <select value={currentSet.number} onChange={change => setSelected(Number(change.target.value))}
+                                className="mt-1 block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5">
+                                {sets.map(set => <option key={set.number} value={set.number}>{groupLabel(set)}</option>)}
                             </select>
                         </label>
-                    ) : (
-                        <p className="text-sm text-slate-600">{setLabel(currentSet)}</p>
-                    )}
+                    ) : (currentSet.group || currentSet.group_label) && <p className="text-sm text-slate-600">{groupLabel(currentSet)}</p>}
                     {currentSet.scrambles.length > 0 && <ScrambleList title="Scrambles" scrambles={currentSet.scrambles} />}
                     {currentSet.extra_scrambles.length > 0 && <ScrambleList title="Extra scrambles" scrambles={currentSet.extra_scrambles} />}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button type="button" onClick={copySet}
-                            className="min-h-10 rounded-sm bg-orange-300 px-4 text-sm font-semibold hover:bg-orange-200">
-                            Copy scrambles
-                        </button>
-                        <p role="status" className="text-sm text-slate-600">{copyMessage}</p>
-                    </div>
                 </div>
             )}
         </dialog>

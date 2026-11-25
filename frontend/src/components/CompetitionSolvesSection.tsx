@@ -11,6 +11,7 @@ import {useEffect, useRef, useState} from "react";
 import {SolveSession} from "@/types/SolveSession";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { competitionRoundPath } from "@/lib/competitionView";
 
 
 type EventData = {
@@ -20,7 +21,7 @@ type EventData = {
 
 
 interface SolvesProps {
-    slug: string,
+    apiPath: string;
     initialSolveData: SolveSession[];
     allEventData: EventData[];
     initialEvent: Event;
@@ -30,7 +31,7 @@ interface SolvesProps {
 
 
 export default function CompetitionSolvesSection({
-                                          slug, initialSolveData, allEventData, initialEvent, initialRound, scrambleRounds
+                                          apiPath, initialSolveData, allEventData, initialEvent, initialRound, scrambleRounds
                                       } : SolvesProps) {
     const [solveData, setSolveData] = useState(initialSolveData);
     const [event, setEvent] = useState(initialEvent);
@@ -46,7 +47,7 @@ export default function CompetitionSolvesSection({
 
         async function fetchSolves() {
           try {
-            const competitionSolveData = await apiFetch(`/competitions/${encodeURIComponent(slug)}/${encodeURIComponent(event)}/${round}`, { cache: "no-store" });
+            const competitionSolveData = await apiFetch(competitionRoundPath(apiPath, event, round), { cache: "no-store" });
 
             setSolveData(competitionSolveData);
           } catch (error) {
@@ -59,7 +60,7 @@ export default function CompetitionSolvesSection({
         } else {
             isMounted.current = true;
         }
-    }, [round, event, slug]);
+    }, [round, event, apiPath]);
 
     function handleEventClick(event: Event) {
         setNumRounds(allEventData.find(eventData => eventData.name === event)?.rounds || 3);
@@ -75,12 +76,18 @@ export default function CompetitionSolvesSection({
 
     return (
         <div>
-            <div className={`mx-auto grid w-full max-w-5xl items-center justify-items-center gap-x-5 gap-y-4 px-6 pb-3 min-[420px]:grid-cols-[minmax(0,1fr)_auto] ${hasScrambles ? "lg:grid-cols-[minmax(0,1fr)_auto_auto]" : ""}`}>
-                <SwitchClick type={"event"} events={allEventData.map(event => event.name)} initialEvent={event} changeFunction={handleEventClick} />
-                <SwitchClick type={"round"} rounds={numRounds} initialRound={round} changeFunction={setRound} />
+            <div className={hasScrambles
+                ? "mx-auto grid w-fit max-w-full items-center justify-items-center gap-x-5 gap-y-4 px-6 pb-3 min-[420px]:grid-cols-[minmax(0,max-content)_minmax(0,max-content)] lg:w-full lg:max-w-5xl lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+                : "flex justify-around max-w-5xl w-full mx-auto items-center"}>
+                <div className={hasScrambles ? "min-w-0 max-w-full lg:col-start-1 lg:row-start-1" : "contents"}>
+                    <SwitchClick type={"event"} events={allEventData.map(event => event.name)} initialEvent={event} changeFunction={handleEventClick} />
+                </div>
+                <div className={hasScrambles ? "min-w-0 max-w-full lg:col-start-3 lg:row-start-1" : "contents"}>
+                    <SwitchClick type={"round"} rounds={numRounds} initialRound={round} changeFunction={setRound} />
+                </div>
                 {hasScrambles && (
-                    <div className="min-[420px]:col-span-2 lg:col-span-1">
-                        <CompetitionScramblesButton key={`${event}-${round}`} slug={slug} event={event} round={round} />
+                    <div className="min-[420px]:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1">
+                        <CompetitionScramblesButton key={`${event}-${round}`} roundPath={competitionRoundPath(apiPath, event, round)} event={event} round={round} />
                     </div>
                 )}
             </div>

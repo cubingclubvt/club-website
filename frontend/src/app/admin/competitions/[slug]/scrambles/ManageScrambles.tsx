@@ -12,6 +12,7 @@ type ScrambleSet = {
     id: number;
     number: number;
     group_id: number | null;
+    group_label: string;
     scrambles: string[];
     extra_scrambles: string[];
     version: string;
@@ -26,10 +27,15 @@ function groupLabel(group: Group) {
     return `Wave ${group.wave_number}${group.wave_name ? ` (${group.wave_name})` : ""} · Group ${group.number}`;
 }
 
-function assignmentLabel(groupId: number | null, groups: Group[]) {
-    if (groupId === null) return "Round only";
-    const group = groups.find(option => option.id === groupId);
-    return group ? groupLabel(group) : `Group ID ${groupId}`;
+function assignmentLabel(set: ScrambleSet, groups: Group[]) {
+    if (set.group_id === null) return set.group_label || "Round only";
+    const group = groups.find(option => option.id === set.group_id);
+    return group ? groupLabel(group) : `Group ID ${set.group_id}`;
+}
+
+function assignmentFilter(set: ScrambleSet) {
+    if (set.group_id !== null) return String(set.group_id);
+    return set.group_label ? `custom-${set.id}` : "round";
 }
 
 export default function ManageScrambles({ competitionId, rounds }: { competitionId: number; rounds: SolveRound[] }) {
@@ -79,9 +85,10 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
     }
 
     const selectedGroup = data?.groups.find(group => String(group.id) === filter);
-    const activeFilter = filter === "round" || selectedGroup ? filter : "all";
-    const visible = data?.sets.filter(set => activeFilter === "all" ||
-        (activeFilter === "round" ? set.group_id === null : set.group_id === selectedGroup?.id));
+    const customSets = data?.sets.filter(set => set.group_id === null && set.group_label) ?? [];
+    const selectedCustom = customSets.some(set => assignmentFilter(set) === filter);
+    const activeFilter = filter === "round" || selectedGroup || selectedCustom ? filter : "all";
+    const visible = data?.sets.filter(set => activeFilter === "all" || assignmentFilter(set) === activeFilter);
     const groupHasSet = selectedGroup && visible && visible.length > 0;
 
     function finish(saved?: ScrambleSet) {
@@ -92,7 +99,7 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
             if (saved) sets.push(saved);
             return { ...previous, sets: sets.sort((a, b) => a.number - b.number) };
         });
-        if (saved && activeFilter !== "all") setFilter(saved.group_id === null ? "round" : String(saved.group_id));
+        if (saved && activeFilter !== "all") setFilter(assignmentFilter(saved));
         setNotice(saved ? "Scramble set saved." : "Scramble set removed.");
         setAction(null);
     }
@@ -100,21 +107,25 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
     return (
         <div className="space-y-5 px-5 py-5 sm:px-8">
             <div className="flex flex-wrap items-end gap-3">
-                <label className="min-w-0 flex-1 text-sm font-semibold">
-                    Group
-                    <select className={selectClass} disabled={!data} value={activeFilter}
-                        onChange={event => { setFilter(event.target.value); setNotice(""); }}>
-                        <option value="all">All sets</option>
-                        <option value="round">Round only</option>
-                        {data?.groups.map(group => <option key={group.id} value={group.id}>{groupLabel(group)}</option>)}
-                    </select>
-                </label>
-                <button type="button" onClick={reload} className={secondaryButton}>Reload</button>
+                {data && (data.groups.length > 0 || customSets.length > 0) && (
+                    <label className="min-w-0 flex-1 text-sm font-semibold">
+                        Show sets for
+                        <select className={selectClass} value={activeFilter}
+                            onChange={event => { setFilter(event.target.value); setNotice(""); }}>
+                            <option value="all">All sets</option>
+                            <option value="round">Round only (no group)</option>
+                            {data.groups.map(group => <option key={group.id} value={group.id}>{groupLabel(group)}</option>)}
+                            {customSets.map(set => <option key={set.id} value={assignmentFilter(set)}>{set.group_label}</option>)}
+                        </select>
+                    </label>
+                )}
+                <button type="button" onClick={reload} className={`${secondaryButton} ml-auto`}>Reload</button>
                 <button type="button" onClick={() => setAction({ kind: "add" })} disabled={!data || !!groupHasSet}
                     className="min-h-10 rounded-sm bg-orange-300 px-4 text-sm font-semibold enabled:hover:bg-admin-button-hover disabled:opacity-50">
                     Add scramble set
                 </button>
             </div>
+            {groupHasSet && <p className="text-sm text-slate-600">This group already has a set. Use Edit to change it.</p>}
             {notice && <p role="status" className="text-sm text-emerald-800">{notice}</p>}
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
             {!data && !error && <p role="status" className="text-sm text-slate-600">Loading scramble sets…</p>}
@@ -126,7 +137,7 @@ function RoundScrambles({ path, round }: { path: string; round: SolveRound }) {
                             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
                                 <div>
                                     <h2 className="font-bold">Set {set.number}</h2>
-                                    <p className="mt-1 text-sm text-slate-600">{assignmentLabel(set.group_id, data.groups)}</p>
+                                    <p className="mt-1 text-sm text-slate-600">{assignmentLabel(set, data.groups)}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button type="button" className={secondaryButton} aria-label={`Edit set ${set.number}`}
@@ -171,7 +182,12 @@ function ScrambleDialog({ action, path, data, round, initialGroup, onClose, onSa
 }) {
     const set = action.kind === "add" ? undefined : action.set;
     const removing = action.kind === "remove";
-    const [groupId, setGroupId] = useState(set ? set.group_id : initialGroup);
+    const savedGroup = set ? set.group_id : initialGroup;
+    const [assignment, setAssignment] = useState(
+        savedGroup !== null ? String(savedGroup) : set?.group_label ? "custom" : "",
+    );
+    const [customLabel, setCustomLabel] = useState(set?.group_label ?? "");
+    const groupId = assignment && assignment !== "custom" ? Number(assignment) : null;
     const [scrambles, setScrambles] = useState(() => set?.scrambles ?? [""]);
     const [extras, setExtras] = useState(() => set?.extra_scrambles ?? []);
     const [saving, setSaving] = useState(false);
@@ -191,6 +207,7 @@ function ScrambleDialog({ action, path, data, round, initialGroup, onClose, onSa
             } else {
                 const saved: ScrambleSet = await apiBodyFetch(endpoint, set ? "PATCH" : "POST", {
                     group_id: groupId,
+                    group_label: assignment === "custom" ? customLabel.trim() : "",
                     scrambles: scrambles.map(line => line.trim()),
                     extra_scrambles: extras.map(line => line.trim()),
                     ...(set ? { version: set.version } : {}),
@@ -206,9 +223,12 @@ function ScrambleDialog({ action, path, data, round, initialGroup, onClose, onSa
 
     return (
         <AdminEditDialog title={removing ? "Remove scramble set?" : set ? `Edit set ${set.number}` : "Add scramble set"}
-            description={`${round.event} · Round ${round.number}${set ? ` · ${assignmentLabel(set.group_id, data.groups)}` : ""}`}
+            description={`${round.event} · Round ${round.number}${set ? ` · ${assignmentLabel(set, data.groups)}` : ""}`}
             onClose={onClose} onSubmit={submit} saving={saving} error={error}
-            disabled={!removing && (!scrambles.length || [...scrambles, ...extras].some(line => !line.trim()))}
+            disabled={!removing && (
+                !scrambles.length || [...scrambles, ...extras].some(line => !line.trim()) ||
+                (assignment === "custom" && !customLabel.trim())
+            )}
             size={removing ? "compact" : "wide"} destructive={removing}
             submitLabel={removing ? "Remove set" : set ? "Save changes" : "Add set"} savingLabel={removing ? "Removing…" : undefined}>
             {removing ? (
@@ -217,13 +237,14 @@ function ScrambleDialog({ action, path, data, round, initialGroup, onClose, onSa
                 <div className="max-h-[55dvh] space-y-5 overflow-y-auto pr-2">
                     <label className="block text-sm font-semibold">
                         Group assignment
-                        <select className={selectClass} value={groupId ?? ""} onChange={event => {
-                            setGroupId(event.target.value ? Number(event.target.value) : null);
+                        <select className={selectClass} value={assignment} onChange={event => {
+                            setAssignment(event.target.value);
                             setError("");
                         }}>
-                            <option value="">Round only</option>
+                            <option value="">Round only (no group)</option>
+                            <option value="custom">Custom group label</option>
                             {groupId !== null && !data.groups.some(group => group.id === groupId) && (
-                                <option value={groupId}>{assignmentLabel(groupId, data.groups)}</option>
+                                <option value={groupId}>Group ID {groupId}</option>
                             )}
                             {data.groups.map(group => (
                                 <option key={group.id} value={group.id} disabled={unavailableGroups.has(group.id)}>
@@ -232,6 +253,16 @@ function ScrambleDialog({ action, path, data, round, initialGroup, onClose, onSa
                             ))}
                         </select>
                     </label>
+                    {assignment === "custom" && (
+                        <label className="block text-sm font-semibold">
+                            Group label
+                            <input type="text" className={selectClass} value={customLabel} maxLength={100}
+                                placeholder="Group A" required onChange={event => {
+                                    setCustomLabel(event.target.value);
+                                    setError("");
+                                }} />
+                        </label>
+                    )}
                     <ScrambleFields label="Scrambles" singular="scramble" lines={scrambles}
                         onChange={lines => { setScrambles(lines); setError(""); }} />
                     <ScrambleFields label="Extra scrambles" singular="extra scramble" lines={extras}

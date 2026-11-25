@@ -13,6 +13,19 @@ class CompetitorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Competitor
         fields = ['first_name', 'last_name', 'school_id', 'grade']
+
+    def validate_school_id(self, school_id):
+        if self.instance is not None and school_id == self.instance.school_id:
+            return school_id
+        if school_id in {'.', '..'} or any(char in '/\\?#%' or char.isspace() for char in school_id):
+            raise serializers.ValidationError('Enter a school ID that can be used in the competitor profile URL.')
+        existing = Competitor.objects.filter(school_id__iexact=school_id)
+        if self.instance is not None:
+            existing = existing.exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise serializers.ValidationError('This school ID is already in use.')
+        return school_id
+
     def create(self, validated_data):
         validated_data['first_name'] = validated_data['first_name'].title()
         validated_data['last_name'] = validated_data['last_name'].title()
@@ -28,15 +41,6 @@ class EditCompetitorSerializer(CompetitorSerializer):
 
     class Meta(CompetitorSerializer.Meta):
         fields = [*CompetitorSerializer.Meta.fields, 'updated_at']
-
-    def validate_school_id(self, school_id):
-        if school_id == self.instance.school_id:
-            return school_id
-        if school_id in {'.', '..'} or any(char in '/\\?#%' or char.isspace() for char in school_id):
-            raise serializers.ValidationError('Enter a school ID that can be used in the competitor profile URL.')
-        if Competitor.objects.filter(school_id__iexact=school_id).exclude(pk=self.instance.pk).exists():
-            raise serializers.ValidationError('This school ID is already in use.')
-        return school_id
 
 
 class CompetitorDetailSerializer(CompetitorSerializer):
@@ -219,14 +223,43 @@ class AdminCompetitionInfoSerializer(CompetitionInfoSerializer):
         ]
 
 
-class CompetitionDetailsUpdateSerializer(serializers.ModelSerializer):
+class CompetitionDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Competition
+        fields = ['name', 'location', 'start_time', 'end_time', 'official', 'official_link']
+
+    def validate_name(self, name):
+        if self.instance is not None and name == self.instance.name:
+            return name
+        url_name = name.replace(' ', '-')
+        if '/' in name or '\\' in name or url_name.lower() in {'.', '..', 'create', 'new'}:
+            raise serializers.ValidationError('Choose a name that can be used in the competition URL.')
+        existing = Competition.objects.with_url_name().filter(url_name__iexact=url_name)
+        if self.instance is not None:
+            existing = existing.exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise serializers.ValidationError('A competition already uses this name or URL.')
+        return name
+
+    def validate(self, attrs):
+        if 'start_time' in attrs or 'end_time' in attrs:
+            start_time = attrs.get('start_time', getattr(self.instance, 'start_time', None))
+            end_time = attrs.get('end_time', getattr(self.instance, 'end_time', None))
+            if start_time is not None and end_time is not None and end_time < start_time:
+                raise serializers.ValidationError({'end_time': 'End time must be on or after start time.'})
+        official = attrs.get('official', getattr(self.instance, 'official', False))
+        if ('official' in attrs or 'official_link' in attrs) and not official:
+            attrs['official_link'] = None
+        return attrs
+
+
+class CompetitionDetailsUpdateSerializer(CompetitionDetailsSerializer):
     event_round_counts = serializers.DictField(
         child=serializers.IntegerField(min_value=0, max_value=len(ROUND_TYPE_NAMES)), required=False, write_only=True,
     )
 
-    class Meta:
-        model = Competition
-        fields = ['name', 'location', 'start_time', 'end_time', 'official', 'official_link', 'event_round_counts']
+    class Meta(CompetitionDetailsSerializer.Meta):
+        fields = [*CompetitionDetailsSerializer.Meta.fields, 'event_round_counts']
 
     def update_round_counts(self, competition, counts):
         events = Event.objects.in_bulk(counts.keys(), field_name='name')
@@ -256,28 +289,6 @@ class CompetitionDetailsUpdateSerializer(serializers.ModelSerializer):
         if errors:
             raise serializers.ValidationError({'event_round_counts': errors})
 
-    def validate_name(self, name):
-        if name == self.instance.name:
-            return name
-        url_name = name.replace(' ', '-')
-        if '/' in name or '\\' in name or url_name.lower() in {'.', '..', 'create', 'new'}:
-            raise serializers.ValidationError('Choose a name that can be used in the competition URL.')
-        if Competition.objects.with_url_name().filter(url_name__iexact=url_name).exclude(
-            pk=self.instance.pk,
-        ).exists():
-            raise serializers.ValidationError('A competition already uses this name or URL.')
-        return name
-
-    def validate(self, attrs):
-        if 'start_time' in attrs or 'end_time' in attrs:
-            start_time = attrs.get('start_time', self.instance.start_time)
-            end_time = attrs.get('end_time', self.instance.end_time)
-            if end_time < start_time:
-                raise serializers.ValidationError({'end_time': 'End time must be on or after start time.'})
-        if ('official' in attrs or 'official_link' in attrs) and not attrs.get('official', self.instance.official):
-            attrs['official_link'] = None
-        return attrs
-
     def update(self, instance, validated_data):
         event_round_counts = validated_data.pop('event_round_counts', {})
         if event_round_counts:
@@ -289,27 +300,44 @@ class CompetitionDetailsUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
-class CompetitionCreateSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    location = serializers.CharField()
-    official = serializers.BooleanField()
-    official_link = serializers.URLField(required=False, allow_null=True)
-    start_time = serializers.DateTimeField()
-    end_time = serializers.DateTimeField()
+class DeleteCompetitionSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, trim_whitespace=False)
+    version = serializers.CharField(max_length=64)
 
+
+class CompetitionCreateSerializer(CompetitionDetailsSerializer):
     events = serializers.ListField(
-        child=serializers.DictField(child=serializers.CharField())
+        child=serializers.DictField(child=serializers.CharField()),
+        allow_empty=False, error_messages={'empty': 'Enter at least one event with one or more rounds.'},
     )
     competitors = serializers.ListField(
         child=serializers.DictField()
     )
 
+    class Meta(CompetitionDetailsSerializer.Meta):
+        fields = [*CompetitionDetailsSerializer.Meta.fields, 'events', 'competitors']
+
     def validate_events(self, value):
+        errors = {}
+        seen = set()
+        available = set(Event.objects.values_list('name', flat=True))
+        rounds_field = serializers.IntegerField(min_value=1, max_value=len(ROUND_TYPE_NAMES))
         for event in value:
             if "event-name" not in event or "Rounds" not in event:
                 raise serializers.ValidationError("Each event must include 'event-name' and 'Rounds'.")
-            if not Event.objects.filter(name=event["event-name"]).exists():
-                raise serializers.ValidationError(f"Event '{event['event-name']}' does not exist.")
+            name = event["event-name"]
+            if name not in available:
+                errors[name] = f"Event '{name}' does not exist."
+            elif name in seen:
+                errors[name] = f"Select '{name}' only once."
+            else:
+                try:
+                    event["Rounds"] = rounds_field.run_validation(event["Rounds"])
+                except serializers.ValidationError as error:
+                    errors[name] = error.detail
+            seen.add(name)
+        if errors:
+            raise serializers.ValidationError(errors)
         return value
 
     def validate_competitors(self, value):
@@ -324,8 +352,6 @@ class CompetitionCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        from .models import CompetitionRound, Solve, Competitor, Competition, Event, RoundType
-
         events_data = validated_data.pop("events")
         competitors_data = validated_data.pop("competitors")
 
@@ -336,8 +362,8 @@ class CompetitionCreateSerializer(serializers.Serializer):
         round_map = {}  # (event_name, round_number) → CompetitionRound
         for event_info in events_data:
             event = Event.objects.get(name=event_info["event-name"])
-            for number in range(1, int(event_info["Rounds"]) + 1):
-                round_type = RoundType.objects.get(name=ROUND_TYPE_NAMES[number - 1])
+            for number in range(1, event_info["Rounds"] + 1):
+                round_type, _ = RoundType.objects.get_or_create(name=ROUND_TYPE_NAMES[number - 1])
                 comp_round = CompetitionRound.objects.create(
                     competition=competition,
                     event=event,
@@ -444,7 +470,7 @@ class PublicScrambleSetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScrambleSet
-        fields = ['number', 'group', 'scrambles', 'extra_scrambles']
+        fields = ['number', 'group', 'group_label', 'scrambles', 'extra_scrambles']
 
     def get_group(self, scramble_set):
         group = scramble_set.group
@@ -458,12 +484,12 @@ class AdminScrambleSetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScrambleSet
-        fields = ['id', 'number', 'group_id', 'scrambles', 'extra_scrambles', 'version']
+        fields = ['id', 'number', 'group_id', 'group_label', 'scrambles', 'extra_scrambles', 'version']
 
     @staticmethod
     def get_version(scramble_set):
         snapshot = json.dumps([
-            scramble_set.group_id, scramble_set.scrambles, scramble_set.extra_scrambles,
+            scramble_set.group_id, scramble_set.group_label, scramble_set.scrambles, scramble_set.extra_scrambles,
         ])
         return hashlib.sha256(snapshot.encode()).hexdigest()
 
@@ -474,8 +500,16 @@ class ScrambleSetVersionSerializer(serializers.Serializer):
 
 class ScrambleSetWriteSerializer(serializers.Serializer):
     group_id = serializers.IntegerField(min_value=1, allow_null=True, default=None)
+    group_label = serializers.CharField(max_length=100, allow_blank=True, default="")
     scrambles = serializers.ListField(child=serializers.CharField(max_length=4096), allow_empty=False)
     extra_scrambles = serializers.ListField(child=serializers.CharField(max_length=4096), default=list)
+
+    def validate(self, attrs):
+        group_id = attrs.get('group_id', getattr(self.instance, 'group_id', None))
+        group_label = attrs.get('group_label', getattr(self.instance, 'group_label', ''))
+        if group_id is not None and group_label:
+            raise serializers.ValidationError({'group_label': 'Use a saved group or a custom label for this set.'})
+        return attrs
 
 
 class EditScrambleSetSerializer(ScrambleSetWriteSerializer, ScrambleSetVersionSerializer):

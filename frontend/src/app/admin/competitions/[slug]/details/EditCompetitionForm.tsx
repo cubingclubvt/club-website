@@ -3,20 +3,17 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiBodyFetch } from "@/lib/api";
+import { adminRequestError, errorFields, fieldErrorMessage } from "../../../_components/formErrors";
 import CompetitionDetailsFields, {
     type CompetitionDetails,
     type CompetitionDetailsErrors,
 } from "../../_components/CompetitionDetailsFields";
+import { competitionFields, maxCompetitionRounds, validateCompetitionDetails } from "../../_lib/competitionFields";
 
 type EventRounds = { name: string; rounds: number };
 
 function countsByEvent(events: EventRounds[]) {
     return Object.fromEntries(events.map(({ name, rounds }) => [name, rounds]));
-}
-
-function errorMessage(value: unknown) {
-    if (typeof value === "string") return value;
-    return Array.isArray(value) ? value.join(" ") : undefined;
 }
 
 export default function EditCompetitionForm({ competitionId, slug, initialValues, events, availableEvents }: {
@@ -37,8 +34,7 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
     const [saveError, setSaveError] = useState("");
     const [saving, setSaving] = useState(false);
     const eventNames = [...new Set([...availableEvents, ...Object.keys(savedCounts)])];
-    const fields = Object.keys(values) as (keyof CompetitionDetails)[];
-    const changedFields = fields.filter(field => values[field] !== savedValues[field]);
+    const changedFields = competitionFields.filter(field => values[field] !== savedValues[field]);
     const editedCounts = Object.entries(roundCounts).filter(
         ([name, count]) => count !== String(savedCounts[name] ?? 0),
     );
@@ -47,7 +43,11 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
     function handleChange(event: ChangeEvent<HTMLInputElement>) {
         const { name, value, type, checked } = event.target;
         setValues(previous => ({ ...previous, [name]: type === "checkbox" ? checked : value }));
-        setErrors(previous => ({ ...previous, [name]: undefined }));
+        setErrors(previous => ({
+            ...previous, [name]: undefined,
+            ...(name === "official" && !checked ? { official_link: undefined } : {}),
+            ...(name === "start_time" ? { end_time: undefined } : {}),
+        }));
         setMessage("");
         setSaveError("");
     }
@@ -64,6 +64,15 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (saving || !hasChanges) return;
+        const validationErrors = validateCompetitionDetails(values, changedFields);
+        setErrors(validationErrors);
+        setRoundErrors({});
+        setSaveError("");
+        setMessage("");
+        if (Object.keys(validationErrors).length) {
+            setSaveError("Check the highlighted fields and try again.");
+            return;
+        }
         const submitted = {
             ...values,
             name: values.name.trim(),
@@ -78,10 +87,6 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
                 .map(([name, count]) => [name, Number(count)]),
         );
         if (Object.keys(countChanges).length) changes.event_round_counts = countChanges;
-        setErrors({});
-        setRoundErrors({});
-        setSaveError("");
-        setMessage("");
         if (!Object.keys(changes).length) {
             cancelChanges();
             setMessage("No changes to save.");
@@ -112,19 +117,26 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
             } else {
                 router.refresh();
             }
-        } catch (error) {
-            if (error instanceof ApiError && error.status === 400 && error.details && typeof error.details === "object") {
-                const details = error.details as Record<string, unknown>;
-                setErrors(Object.fromEntries(fields.map(field => [field, errorMessage(details[field])])));
-                const countErrors = details.event_round_counts;
-                if (countErrors && typeof countErrors === "object") {
-                    setRoundErrors(Object.fromEntries(
-                        Object.entries(countErrors).map(([name, value]) => [name, errorMessage(value)]),
-                    ));
-                }
-                setSaveError("Check the competition details and try again.");
+        } catch (failure) {
+            const fallback = "Could not save competition details. Try again.";
+            if (failure instanceof ApiError && failure.status === 400) {
+                const details = errorFields(failure.details);
+                const fieldErrors = Object.fromEntries(competitionFields.flatMap(field => {
+                    const message = fieldErrorMessage(details[field]);
+                    return message ? [[field, message]] : [];
+                }));
+                const countErrors = Object.fromEntries(
+                    Object.entries(errorFields(details.event_round_counts)).map(([name, value]) => [name, fieldErrorMessage(value)]),
+                );
+                setErrors(fieldErrors);
+                setRoundErrors(countErrors);
+                const hasFieldErrors = Object.keys(fieldErrors).length || eventNames.some(name => countErrors[name]);
+                const roundMessage = hasFieldErrors ? undefined : fieldErrorMessage(details.event_round_counts);
+                setSaveError(adminRequestError(
+                    failure, hasFieldErrors ? "Check the highlighted fields and try again." : roundMessage ?? fallback,
+                ));
             } else {
-                setSaveError("Could not save competition details. Try again.");
+                setSaveError(adminRequestError(failure, fallback));
             }
         } finally {
             setSaving(false);
@@ -152,7 +164,7 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
                                         id={`event-rounds-${index}`}
                                         type="number"
                                         min={0}
-                                        max={Math.max(3, savedCounts[name] ?? 0)}
+                                        max={Math.max(maxCompetitionRounds, savedCounts[name] ?? 0)}
                                         required
                                         value={roundCounts[name] ?? String(savedCounts[name] ?? 0)}
                                         aria-label={`${name} round count`}
@@ -164,7 +176,7 @@ export default function EditCompetitionForm({ competitionId, slug, initialValues
                                             setMessage("");
                                             setSaveError("");
                                         }}
-                                        className="min-h-10 w-full rounded-sm border border-slate-300 bg-white px-1 text-center focus-visible:outline-2 focus-visible:outline-orange-700"
+                                        className={`min-h-10 w-full rounded-sm border px-1 text-center focus-visible:outline-2 focus-visible:outline-orange-700 ${roundErrors[name] ? "border-red-500 bg-red-50" : "border-slate-300 bg-white"}`}
                                     />
                                     {roundErrors[name] && <p id={`event-rounds-error-${index}`} className="col-span-2 text-sm text-red-700">{roundErrors[name]}</p>}
                                 </div>

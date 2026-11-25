@@ -1,109 +1,27 @@
-
-import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
-import { SolveSession } from "@/types/SolveSession";
-import type { ScrambleRound } from "@/types/Competition";
+import CompetitionView from "@/components/CompetitionView";
 import { ApiError, apiFetch } from "@/lib/api";
+import { loadInitialSolves } from "@/lib/competitionView";
+import type { CompetitionViewData } from "@/types/Competition";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-interface CompetitionDetailProps {
-    params: Promise<{
-        slug: string;
-    }>;
-}
-
-
-async function CompetitionDetail({ params }: CompetitionDetailProps) {
-
+export default async function CompetitionDetail({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
+    const apiPath = `/competitions/${encodeURIComponent(slug)}`;
 
-    // TODO: need to think about this double fetching performance-wise - maybe include competition metadata in
-    // solve results as well? but this also adds some small overhead and feels a bit unnecessary, i think i prefer current strategy
-
-    let competitionName = "Null";
-    let competitionDate = "N/A";
-    let competitionNumCompetitors = 0;
-    let competitionEventData = [];
-    let competitionLink = null;
-
-    let competitionSolveData: SolveSession[] = [];
-    let scrambleRounds: ScrambleRound[] = [];
-
-
-    if (process.env.DISABLE_BACKEND === 'false') {
-        try {
-            const competitionMetadata = await apiFetch(`/competitions/${encodeURIComponent(slug)}`, { cache: "no-store" });
-            competitionName = competitionMetadata.name;
-            competitionDate = competitionMetadata.date;
-            competitionNumCompetitors = competitionMetadata.num_competitors;
-            competitionEventData = competitionMetadata.events;
-            competitionLink = competitionMetadata.official_link;
-            scrambleRounds = competitionMetadata.scramble_rounds ?? [];
-
-            const events = competitionEventData;
-            const initialEvent = events[0]?.name;
-            if (initialEvent) {
-                competitionSolveData = await apiFetch(
-                    `/competitions/${encodeURIComponent(slug)}/${encodeURIComponent(initialEvent)}/1`, { cache: "no-store" },
-                );
-            }
-
-
-        } catch (error) {
-            if (error instanceof ApiError && error.status === 404) notFound();
-            throw error;
-        }
+    if (process.env.DISABLE_BACKEND !== "false") {
+        return <CompetitionView apiPath={apiPath} initialSolves={[]} competition={{
+            name: "Null", date: "N/A", num_competitors: 0, official_link: null, is_published: false, events: [],
+        }} />;
     }
 
-    return (
-        <div>
-            <h1 className="text-white text-center text-5xl mt-24">
-                {competitionLink ? (
-                    <a href={competitionLink}
-                        className="link link--orange items-center gap-3 hover:scale-103 !transition-transform !duration-250"
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        {competitionName}
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 inline-block ml-3 -mt-2">
-                            <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
-                        </svg>
-                    </a>
-                ) : (competitionName)}
-            </h1>
-
-            <section className={"flex justify-center gap-20 md:gap-40 items-start max-w-4xl mt-8 w-full mx-auto p-4"}>
-                <div className={"flex flex-col gap-3 items-center"}>
-                    <div className={"text-slate-400 text-center"}>
-                        Date
-                    </div>
-                    <div className={"text-slate-200 text-center text-xl"}>
-                        {competitionDate}
-                    </div>
-                </div>
-                <div className={"flex flex-col gap-3 items-center"}>
-                    <div className={"text-slate-400 text-center whitespace-nowrap"}>
-                        Competitors
-                    </div>
-                    <div className={"text-slate-200 text-center text-xl"}>
-                        {competitionNumCompetitors}
-                    </div>
-                </div>
-            </section>
-
-            <div className={"my-separator mx-auto h-px w-9/10 md:w-8/10 bg-gray-300 my-4 md:my-16"}></div>
-
-            {competitionEventData.length > 0 && (
-                <CompetitionSolvesSection
-                    slug={slug} initialSolveData={competitionSolveData}
-                    allEventData={competitionEventData} initialEvent={competitionEventData[0].name} initialRound={1}
-                    scrambleRounds={scrambleRounds}
-                />
-            )}
-
-        </div>
-    );
-
+    try {
+        const competition: CompetitionViewData = await apiFetch(apiPath, { cache: "no-store" });
+        const initialSolves = await loadInitialSolves(competition, suffix => apiFetch(apiPath + suffix, { cache: "no-store" }));
+        return <CompetitionView competition={competition} initialSolves={initialSolves} apiPath={apiPath} />;
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 404) notFound();
+        throw error;
+    }
 }
-
-export default CompetitionDetail;

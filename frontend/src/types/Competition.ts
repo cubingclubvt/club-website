@@ -7,3 +7,13 @@ export type Competition = {
 };
 
 export type ScrambleRound = { event: string; round: number };
+
+export type CompetitionViewData = {
+    name: string;
+    date: string;
+    num_competitors: number;
+    official_link: string | null;
+    is_published: boolean;
+    events: { name: string; rounds: number }[];
+    scramble_rounds?: ScrambleRound[];
+};

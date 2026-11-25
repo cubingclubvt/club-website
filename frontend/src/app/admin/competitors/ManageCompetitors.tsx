@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { ApiError, apiBodyFetch } from "@/lib/api";
+import { adminRequestError, errorFields, fieldErrorMessage } from "../_components/formErrors";
 import AdminEditDialog from "../_components/AdminEditDialog";
 import AdminPagination from "../_components/AdminPagination";
 import CompetitorSearch from "../_components/CompetitorSearch";
@@ -9,7 +10,7 @@ import useAdminPage from "../_components/useAdminPage";
 
 type Competitor = { id: number; first_name: string; last_name: string; school_id: string; grade: number; updated_at: string };
 const rosterPath = "/competitions/admin/competitors/";
-const inputClass = "w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-slate-900";
+const inputClass = "w-full rounded-sm border px-3 py-2.5 text-slate-900";
 
 export default function ManageCompetitors() {
     const [query, setQuery] = useState("");
@@ -155,15 +156,19 @@ function CompetitorDialog({ competitor, onClose, onSaved }: {
             });
             onSaved();
         } catch (failure) {
-            if (failure instanceof ApiError && failure.status === 400 && failure.details && typeof failure.details === "object") {
-                setFieldErrors(Object.fromEntries(Object.entries(failure.details).map(
-                    ([name, messages]) => [name, Array.isArray(messages) ? messages.join(" ") : String(messages)],
-                )));
-                setError("Check the highlighted fields and save again.");
+            if (failure instanceof ApiError && failure.status === 400) {
+                const details = errorFields(failure.details);
+                const errors = Object.fromEntries(fields.flatMap(({ name }) => {
+                    const message = fieldErrorMessage(details[name]);
+                    return message ? [[name, message]] : [];
+                }));
+                setFieldErrors(errors);
+                setError(adminRequestError(failure, Object.keys(errors).length
+                    ? "Check the highlighted fields and save again." : "Could not save the competitor. Try again."));
             } else if (failure instanceof ApiError && failure.status === 409) {
                 setError("This competitor changed. Close the dialog and reload the list before editing again.");
             } else {
-                setError("Could not save the competitor. Try again.");
+                setError(adminRequestError(failure, "Could not save the competitor. Try again."));
             }
         } finally {
             setSaving(false);
@@ -183,7 +188,7 @@ function CompetitorDialog({ competitor, onClose, onSaved }: {
                         <label htmlFor={`edit-competitor-${name}`} className="mb-2 block text-sm font-semibold">{label}</label>
                         <input
                             id={`edit-competitor-${name}`}
-                            className={inputClass}
+                            className={`${inputClass} ${fieldErrors[name] ? "border-red-500 bg-red-50" : "border-slate-300 bg-white"}`}
                             type={name === "grade" ? "number" : "text"}
                             maxLength={name === "grade" ? undefined : 255}
                             required

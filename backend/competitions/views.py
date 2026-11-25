@@ -1,14 +1,15 @@
+import json
 import random
 from competitions.services.round_service import RoundService
 from competitions.services.competitor_service import CompetitorService
 from competitions.services.ranking_service import RankingService
-from competitions.models import Competition, CompetitionGroup, Competitor, CompetitionRound, Event, ScrambleSet, Solve
+from competitions.models import Competition, CompetitionGroup, Competitor, CompetitionRound, Event, GroupAssignment, ScrambleSet, Solve, WaveEntry
 from competitions.services.solve_service import SolveService
 from rest_framework.response import Response 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
 from competitions.serializers import AllCompetitionListSerializer, CompetitorDetailSerializer, CompetitorRoundResultsSerializer, CompetitionInfoSerializer, CompetitorCompetitionSolvesSerializer, CompetitorSerializer, GlobalRankingSerializer, Events, CompetitionCreateSerializer, RoundResultsUpdateSerializer
-from competitions.serializers import AdminCompetitionInfoSerializer, CompetitionDetailsUpdateSerializer
+from competitions.serializers import AdminCompetitionInfoSerializer, CompetitionDetailsUpdateSerializer, DeleteCompetitionSerializer
 from competitions.serializers import AdminCompetitorSerializer, EditCompetitorSerializer, RecordVersionSerializer
 from competitions.serializers import AdminSolveSerializer, AddRoundResultSerializer, EditRoundResultSerializer, EditSolveSerializer, RemoveResultSerializer, SolveCompetitorSerializer
 from competitions.serializers import AdminScrambleSetSerializer, EditScrambleSetSerializer, ScrambleSetVersionSerializer, ScrambleSetWriteSerializer
@@ -16,8 +17,10 @@ from competitions.serializers import PublicCompetitionInfoSerializer, PublicScra
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Max, Q
+from django.db.models import Count, Max, Q
 from django.shortcuts import get_object_or_404
+from django.utils.crypto import salted_hmac
+from django.views.decorators.cache import never_cache
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
@@ -58,15 +61,17 @@ def all_competitions(request):
 
     return Response(serializer.data)
 
-def _published_competition(competition_name):
-    return get_object_or_404(
-        Competition.objects.with_url_name(), url_name=competition_name.replace(' ', '-'), is_published=True,
-    )
+def _competition_by_slug(competition_name, *, public=False):
+    competitions = Competition.objects.with_url_name()
+    if public:
+        competitions = competitions.filter(is_published=True)
+    return get_object_or_404(competitions, url_name=competition_name.replace(' ', '-'))
 
-def _published_round(competition_name, event_name, round_number):
+
+def _competition_round(competition, event_name, round_number):
     return get_object_or_404(
         CompetitionRound,
-        competition=_published_competition(competition_name),
+        competition=competition,
         event__name=event_name,
         number=round_number,
     )
@@ -74,23 +79,30 @@ def _published_round(competition_name, event_name, round_number):
 
 @api_view(['GET'])
 def competition_info(request, competition_name):
-    competition = _published_competition(competition_name)
+    competition = _competition_by_slug(competition_name, public=True)
     return Response(PublicCompetitionInfoSerializer(competition).data)
+
+
+def _round_results_response(round_obj):
+    results = RoundService.get_round_results(round_obj)
+    return Response(CompetitorRoundResultsSerializer(results, many=True).data)
+
+
+def _round_scrambles_response(round_obj):
+    sets = round_obj.scramble_sets.with_scrambles().select_related('group__wave')
+    return Response(PublicScrambleSetSerializer(sets, many=True).data)
 
 
 @api_view(['GET'])
 def round(request, competition_name, event_name, round_number):
-    round_obj = _published_round(competition_name, event_name, round_number)
-    results = RoundService.get_round_results(round_obj)
-    serializer = CompetitorRoundResultsSerializer(results, many=True)
-    return Response(serializer.data)
+    competition = _competition_by_slug(competition_name, public=True)
+    return _round_results_response(_competition_round(competition, event_name, round_number))
 
 
 @api_view(['GET'])
 def round_scrambles(request, competition_name, event_name, round_number):
-    round_obj = _published_round(competition_name, event_name, round_number)
-    sets = round_obj.scramble_sets.with_scrambles().select_related('group__wave')
-    return Response(PublicScrambleSetSerializer(sets, many=True).data)
+    competition = _competition_by_slug(competition_name, public=True)
+    return _round_scrambles_response(_competition_round(competition, event_name, round_number))
 
 
 @api_view(['GET'])
@@ -103,8 +115,32 @@ def admin_competitions(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_competition_info(request, competition_name):
-    competition = get_object_or_404(Competition.objects.with_url_name(), url_name=competition_name.replace(' ', '-'))
+    competition = _competition_by_slug(competition_name)
     return Response(AdminCompetitionInfoSerializer(competition).data)
+
+
+@never_cache
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_preview_competition(request, competition_name):
+    competition = _competition_by_slug(competition_name)
+    return Response(PublicCompetitionInfoSerializer(competition).data)
+
+
+@never_cache
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_preview_round(request, competition_name, event_name, round_number):
+    competition = _competition_by_slug(competition_name)
+    return _round_results_response(_competition_round(competition, event_name, round_number))
+
+
+@never_cache
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_preview_scrambles(request, competition_name, event_name, round_number):
+    competition = _competition_by_slug(competition_name)
+    return _round_scrambles_response(_competition_round(competition, event_name, round_number))
 
 
 @api_view(['PATCH'])
@@ -129,6 +165,71 @@ def update_competition_publication(request, competition_id):
     competition.is_published = is_published
     competition.save(update_fields=['is_published', 'updated_at'])
     return Response({'is_published': competition.is_published})
+
+
+def _competition_deletion_summary(competition):
+    competition_round = Q(competition_round__competition=competition)
+    solves = Solve.objects.filter(competition_round)
+    attendance = competition.attendance.all()
+    scrambler_approvals = competition.scrambler_approvals.all()
+    wave_entries = WaveEntry.objects.filter(competition_round | Q(wave__competition=competition))
+    group_assignments = GroupAssignment.objects.filter(competition_round | Q(group__wave__competition=competition))
+    affected_people = solves.values('competitor_id').union(
+        attendance.values('competitor_id'),
+        scrambler_approvals.values('competitor_id'),
+        wave_entries.values('competitor_id'),
+        group_assignments.values('competitor_id'),
+    )
+    solve_stats = solves.aggregate(count=Count('pk'), last_update=Max('updated_at'))
+    scramble_sets = list(ScrambleSet.objects.filter(competition_round).order_by('pk'))
+    counts = {
+        'rounds': competition.rounds.count(),
+        'solves': solve_stats['count'],
+        'people_affected': affected_people.count(),
+        'scramble_sets': len(scramble_sets),
+        'check_ins': attendance.count(),
+        'scrambler_approvals': scrambler_approvals.count(),
+        'waves': competition.waves.count(),
+        'wave_entries': wave_entries.count(),
+        'groups': CompetitionGroup.objects.filter(wave__competition=competition).count(),
+        'group_assignments': group_assignments.count(),
+    }
+    snapshot = json.dumps([
+        competition.pk, competition.name, competition.is_published, competition.updated_at,
+        counts, solve_stats['last_update'],
+        [(scramble.pk, AdminScrambleSetSerializer.get_version(scramble)) for scramble in scramble_sets],
+    ], default=str, sort_keys=True)
+    version = salted_hmac('competitions.delete', snapshot, algorithm='sha256').hexdigest()
+    return {'name': competition.name, 'is_published': competition.is_published, 'counts': counts, 'version': version}
+
+
+@never_cache
+@api_view(['GET', 'DELETE'])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def admin_competition_deletion(request, competition_id):
+    competitions = Competition.objects.all()
+    if request.method == 'DELETE':
+        competitions = competitions.select_for_update()
+    competition = get_object_or_404(competitions, pk=competition_id)
+    if request.method == 'GET':
+        return Response(_competition_deletion_summary(competition))
+
+    serializer = DeleteCompetitionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    # Match the round locks used by the solve and scramble writers before checking the summary.
+    list(competition.rounds.order_by('pk').select_for_update().values_list('pk', flat=True))
+    summary = _competition_deletion_summary(competition)
+    if serializer.validated_data['version'] != summary['version']:
+        return Response(
+            {'detail': 'This competition changed. Review the updated counts before deleting.', 'summary': summary},
+            status=status.HTTP_409_CONFLICT,
+        )
+    if serializer.validated_data['name'] != competition.name:
+        raise ValidationError({'name': 'Type the competition name exactly as shown.'})
+
+    competition.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
@@ -365,7 +466,7 @@ def admin_scramble_set(request, competition_id, round_id, set_id):
     scramble_set = get_object_or_404(round_obj.scramble_sets, pk=set_id)
     removing = request.method == 'DELETE'
     serializer_class = ScrambleSetVersionSerializer if removing else EditScrambleSetSerializer
-    serializer = serializer_class(data=request.data, partial=not removing)
+    serializer = serializer_class(scramble_set, data=request.data, partial=not removing)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     version = data.pop('version', None)
@@ -431,6 +532,7 @@ def create_competitor(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def create_competition(request):
     serializer = CompetitionCreateSerializer(data=request.data)
     if serializer.is_valid():
