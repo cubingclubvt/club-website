@@ -9,12 +9,12 @@ interface CompetitionProps {
 
 export default function CompetitionCard({ competition, update = false }: CompetitionProps) {
 
-    const slug = competition.name.replace(/ /g, "-")
+    const slug = encodeURIComponent(competition.name.replace(/ /g, "-"));
 
     return (
 
         <div className={"flex flex-col items-center justify-center w-full"}>
-            <Link href={update ? `/admin/update/${slug}` : `/competitions/${slug}`} className={"w-full"}>
+            <Link href={update ? `/admin/competitions/${slug}` : `/competitions/${slug}`} className={"w-full"}>
                 {/*BIG SCREEN / DESKTOP*/}
                 <div className={"hidden md:flex w-full"}>
                     <div className={"bg-orange-300 border border-4 border-r-0 border-black " +

@@ -7,6 +7,7 @@ import React, { useState, ChangeEvent, FormEvent, Suspense} from 'react';
 import Link from 'next/link';
 import { apiBodyFetch } from '@/lib/api';
 import { useSearchParams } from "next/navigation";
+import AdminHeadingRow from "../../_components/AdminHeadingRow";
 
 interface FormData {
     firstName: string;
@@ -128,7 +129,9 @@ const SubmissionForm: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Success!</h2>
+                    <AdminHeadingRow className="mb-2">
+                        <h2 className="flex-1 text-2xl font-bold text-gray-800">Success!</h2>
+                    </AdminHeadingRow>
                     <p className="text-gray-600">You have successfully created a new competitor: {' '}
                         <Link href={`/competitors/${formData.school_id}`} className={"text-orange-400"}>
                              {formData.firstName} {formData.lastName}
@@ -142,11 +145,11 @@ const SubmissionForm: React.FC = () => {
     return (
         <div className="min-h-screen py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="bg-white shadow-2xl overflow-hidden">
+                <div className="bg-white shadow-2xl">
 
-                    <div className="bg-gradient-to-r from-orange-500 to-orange-300 px-8 py-6">
+                    <AdminHeadingRow className="bg-gradient-to-r from-orange-500 to-orange-300 px-4 py-6 sm:px-8">
                         <h1 className="text-3xl font-bold text-white">Create a Competitor</h1>
-                    </div>
+                    </AdminHeadingRow>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="p-8 space-y-8">

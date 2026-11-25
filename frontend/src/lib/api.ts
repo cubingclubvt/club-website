@@ -2,7 +2,13 @@
 // lib/api.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-export async function apiFetch(path: string) {
+export class ApiError extends Error {
+  constructor(public readonly status: number, public readonly details?: unknown) {
+    super(`API error: ${status}`);
+  }
+}
+
+export async function apiFetch(path: string, options: Pick<RequestInit, "cache" | "headers"> = {}) {
   // const res = await fetch(`${API_BASE_URL}${path}`, {credentials: "include"});
   //
 
@@ -10,8 +16,8 @@ export async function apiFetch(path: string) {
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
-    next: { revalidate: 600 }
-    // cache: "no-store"
+    ...(options.cache ? {} : { next: { revalidate: 600 } }),
+    ...options,
   });
 
 
@@ -19,7 +25,7 @@ export async function apiFetch(path: string) {
   console.log(`[apiFetch] ${path} took ${duration.toFixed(2)}ms`);
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    throw new ApiError(res.status);
   }
   return res.json();
 }
@@ -57,8 +63,9 @@ export async function apiBodyFetch<T>(path: string, method: string, body: T) {
     cache: "no-store"
   });
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    throw new ApiError(res.status, await res.json().catch(() => undefined));
   }
+  if (res.status === 204) return;
   return res.json();
 }
 

@@ -37,7 +37,7 @@ export default function CompletedSolvesSection({ slug, event_rankings, initialSo
     useEffect(() => {
         async function fetchSolves() {
             try {
-                const completedSolvesData = await apiFetch(`/competitions/competitor/${slug}/${event}`);
+                const completedSolvesData = await apiFetch(`/competitions/competitor/${slug}/${event}`, { cache: "no-store" });
                 setSolveData(completedSolvesData);
             } catch (error) {
                 console.error("Failed to fetch CompetitionSolves data", error);
@@ -90,7 +90,7 @@ export default function CompletedSolvesSection({ slug, event_rankings, initialSo
                                         rowSpan={singularComp.round_results.length}
                                     >
                                         <Link
-                                            href={`/competitions/${singularComp.competition_name.replace(/\s+/g, '-')}`}
+                                            href={`/competitions/${encodeURIComponent(singularComp.competition_name.replace(/ /g, '-'))}`}
                                             className="px-2 sm:px-4 py-3 block w-full h-full hover:text-orange-400">
                                             <span className="">{singularComp.competition_name}</span>
                                         </Link>

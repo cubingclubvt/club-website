@@ -7,7 +7,7 @@ async function Competitions() {
 
   if (process.env.DISABLE_BACKEND === "false") {
     try {
-      competitions = await apiFetch(`/competitions`);
+      competitions = await apiFetch(`/competitions`, { cache: "no-store" });
     } catch (error) {
       console.error("Failed to fetch competition data:", error);
       competitions = []; // fallback to empty array on failure

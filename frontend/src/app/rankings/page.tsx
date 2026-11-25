@@ -26,7 +26,7 @@ export default async function Rankings() {
 
     if (process.env.DISABLE_BACKEND === 'false') {
       try {
-        rankingsData = await apiFetch(`/competitions/rankings/${initialEvent}/${initialCalculation}`);
+        rankingsData = await apiFetch(`/competitions/rankings/${initialEvent}/${initialCalculation}`, { cache: "no-store" });
       } catch (error) {
         console.error("Failed to fetch rankings data:", error);
         rankingsData = []; // fallback to empty array on failure

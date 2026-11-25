@@ -39,7 +39,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
 
         async function fetchRankings() {
             try {
-                const rankingsData = await apiFetch(`/competitions/rankings/${event}/${calculation}`);
+                const rankingsData = await apiFetch(`/competitions/rankings/${event}/${calculation}`, { cache: "no-store" });
                 setRankingsData(rankingsData);
             } catch (error) {
                 console.error("Failed to fetch rankings data:", error);
@@ -144,7 +144,7 @@ export default function RankingsSection({initialRankingsData, initialEvent, init
                                 </td>
                                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-center text-md text-gray-700">
                                     <Link
-                                        href={`/competitions/${singularRanking.competition_name.replace(/\s+/g, '-')}`}
+                                        href={`/competitions/${encodeURIComponent(singularRanking.competition_name.replace(/ /g, '-'))}`}
                                         className="px-4 sm:px-6 py-4 block w-full h-full hover:text-orange-400">
                                         <span className="">{singularRanking.competition_name}</span>
                                     </Link>

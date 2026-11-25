@@ -9,7 +9,7 @@ class CompetitorService:
 
     @staticmethod
     def get_first_competition_date(competitor):
-        competitions = (competitor.solves
+        competitions = (competitor.solves.published()
                         .select_related('competition_round__competition')
                         .values_list('competition_round__competition__start_time', flat = True)
                         .distinct())
@@ -21,14 +21,14 @@ class CompetitorService:
 
     @staticmethod
     def get_num_competitions(competitor):
-        return (competitor.solves
+        return (competitor.solves.published()
                 .values('competition_round__competition')
                 .distinct()
                 .count())
 
     @staticmethod
     def get_total_solves(competitor):
-        return (competitor.solves.count())
+        return competitor.solves.published().filter(solve_time__isnull=False).count()
 
     @staticmethod
     def get_event_solves_for_competitor(competitor, event):
@@ -37,8 +37,8 @@ class CompetitorService:
 
             # fetch THIS competitor's solves for THIS event (ordered)
             solves = (
-                Solve.objects
-                .filter(competitor=competitor, competition_round__event=event)
+                Solve.objects.published()
+                .filter(competitor=competitor, competition_round__event=event, solve_time__isnull=False)
                 .select_related('competition_round__competition', 'competition_round__event')
                 .order_by('competition_round__competition__start_time',
                           'competition_round__number',
@@ -59,7 +59,7 @@ class CompetitorService:
             round_ids = [rid for (rid, _, _) in round_map.keys()]
             all_round_solves = (
                 Solve.objects
-                .filter(competition_round_id__in=round_ids)
+                .filter(competition_round_id__in=round_ids, solve_time__isnull=False)
                 .select_related('competitor', 'competition_round__event', 'competition_round__competition')
                 .order_by('competition_round_id', 'solve_number')
             )

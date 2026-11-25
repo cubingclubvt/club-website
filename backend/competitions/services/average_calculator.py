@@ -21,6 +21,12 @@ class AverageCalculator:
     @staticmethod
     def calculate_solves_average(solves, avg_type):
         from .solve_service import SolveService
+        if avg_type == "single":
+            return "—"
+        solves = [solve for solve in solves if solve.solve_time is not None]
+        required_numbers = set(range(1, SolveService.attempt_limit(avg_type) + 1))
+        if not required_numbers.issubset(solve.solve_number for solve in solves):
+            return "—"
         durations = SolveService.solves_to_durations(solves)
 
         if avg_type == "mean":

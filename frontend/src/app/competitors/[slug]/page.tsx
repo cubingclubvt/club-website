@@ -24,7 +24,7 @@ async function CompetitorDetail({ params } : CompetitorProps) {
 
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
-            const competitorData = await apiFetch(`/competitions/competitor/${slug}`);
+            const competitorData = await apiFetch(`/competitions/competitor/${slug}`, { cache: "no-store" });
             initialEvent = competitorData.event_rankings?.[0].event_name;
             firstname = competitorData.first_name;
             lastname = competitorData.last_name;
@@ -34,7 +34,7 @@ async function CompetitorDetail({ params } : CompetitorProps) {
             num_competitions = competitorData.num_competitions;
             total_solves = competitorData.total_solves;
             event_rankings = competitorData.event_rankings;
-            initialCompletedSolvesData = await apiFetch(`/competitions/competitor/${slug}/${initialEvent}`);
+            initialCompletedSolvesData = await apiFetch(`/competitions/competitor/${slug}/${initialEvent}`, { cache: "no-store" });
         } catch (error) {
             console.error("Failed to fetch competitor data:", error);
         }

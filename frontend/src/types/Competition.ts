@@ -3,4 +3,7 @@ export type Competition = {
     name: string;
     date: string;
     official: boolean;
+    is_published: boolean;
 };
+
+export type ScrambleRound = { event: string; round: number };

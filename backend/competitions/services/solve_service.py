@@ -1,5 +1,9 @@
 class SolveService:
     @staticmethod
+    def attempt_limit(average_type):
+        return 3 if average_type in {"mean", "single"} else 5
+
+    @staticmethod
     def format_solve_time(solve_time):
         if solve_time is None or solve_time.total_seconds() == 0:
             return "DNF"

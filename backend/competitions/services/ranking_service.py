@@ -74,7 +74,7 @@ class RankingService:
         If current_only=True, competitors with grade=-1 are excluded.
         """
         qs = (
-            Solve.objects
+            Solve.objects.published()
             .filter(competition_round__event=event, solve_time__isnull=False)
             .exclude(solve_time=timedelta(0))
             .select_related('competitor', 'competition_round__competition')
@@ -122,7 +122,7 @@ class RankingService:
         start_time = time.time()
 
         qs = (
-            Solve.objects
+            Solve.objects.published()
             .filter(competition_round__event=event)
             .select_related("competitor", "competition_round__competition", "competition_round__event")
             .order_by("competition_round_id", "competitor_id", "solve_number")
@@ -215,7 +215,7 @@ class RankingService:
 
     @staticmethod
     def get_competitor_best_single(competitor, event):
-        solve_obj = (Solve.objects
+        solve_obj = (Solve.objects.published()
                       .filter(
                           competitor=competitor,
                           competition_round__event=event,

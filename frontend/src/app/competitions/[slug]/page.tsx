@@ -1,7 +1,9 @@
 
 import CompetitionSolvesSection from "@/components/CompetitionSolvesSection";
 import { SolveSession } from "@/types/SolveSession";
-import { apiFetch } from "@/lib/api";
+import type { ScrambleRound } from "@/types/Competition";
+import { ApiError, apiFetch } from "@/lib/api";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -26,27 +28,31 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
     let competitionLink = null;
 
     let competitionSolveData: SolveSession[] = [];
+    let scrambleRounds: ScrambleRound[] = [];
 
 
     if (process.env.DISABLE_BACKEND === 'false') {
         try {
-            const competitionMetadata = await apiFetch(`/competitions/${slug}`);
+            const competitionMetadata = await apiFetch(`/competitions/${encodeURIComponent(slug)}`, { cache: "no-store" });
             competitionName = competitionMetadata.name;
             competitionDate = competitionMetadata.date;
             competitionNumCompetitors = competitionMetadata.num_competitors;
             competitionEventData = competitionMetadata.events;
             competitionLink = competitionMetadata.official_link;
+            scrambleRounds = competitionMetadata.scramble_rounds ?? [];
 
             const events = competitionEventData;
-            const initialEvent = events[0].name;
-
-            competitionSolveData = await apiFetch(
-                `/competitions/${slug}/${initialEvent}/1`
-            );
+            const initialEvent = events[0]?.name;
+            if (initialEvent) {
+                competitionSolveData = await apiFetch(
+                    `/competitions/${encodeURIComponent(slug)}/${encodeURIComponent(initialEvent)}/1`, { cache: "no-store" },
+                );
+            }
 
 
         } catch (error) {
-            console.error("Failed to fetch competition metadata:", error);
+            if (error instanceof ApiError && error.status === 404) notFound();
+            throw error;
         }
     }
 
@@ -87,10 +93,13 @@ async function CompetitionDetail({ params }: CompetitionDetailProps) {
 
             <div className={"my-separator mx-auto h-px w-9/10 md:w-8/10 bg-gray-300 my-4 md:my-16"}></div>
 
-            <CompetitionSolvesSection
-                slug={slug} initialSolveData={competitionSolveData}
-                allEventData={competitionEventData} initialEvent={competitionEventData[0].name} initialRound={1}
-            />
+            {competitionEventData.length > 0 && (
+                <CompetitionSolvesSection
+                    slug={slug} initialSolveData={competitionSolveData}
+                    allEventData={competitionEventData} initialEvent={competitionEventData[0].name} initialRound={1}
+                    scrambleRounds={scrambleRounds}
+                />
+            )}
 
         </div>
     );

@@ -4,6 +4,8 @@
 
 
 import SwitchClick from "@/components/SwitchClick";
+import CompetitionScramblesButton from "@/components/CompetitionScramblesButton";
+import type { ScrambleRound } from "@/types/Competition";
 import type {Event} from "@/types/Event";
 import {useEffect, useRef, useState} from "react";
 import {SolveSession} from "@/types/SolveSession";
@@ -23,16 +25,18 @@ interface SolvesProps {
     allEventData: EventData[];
     initialEvent: Event;
     initialRound: number;
+    scrambleRounds: ScrambleRound[];
 }
 
 
 export default function CompetitionSolvesSection({
-                                          slug, initialSolveData, allEventData, initialEvent, initialRound
+                                          slug, initialSolveData, allEventData, initialEvent, initialRound, scrambleRounds
                                       } : SolvesProps) {
     const [solveData, setSolveData] = useState(initialSolveData);
     const [event, setEvent] = useState(initialEvent);
     const [round, setRound] = useState(initialRound);
     const [numRounds, setNumRounds] = useState(allEventData.find(eventData => eventData.name === initialEvent)?.rounds || 3);
+    const hasScrambles = scrambleRounds.some(item => item.event === event && item.round === round);
 
     //ismounted is here to prevent an unnecessary fetch when component mounts - just use data passed from prop on
     //initial mount! no need to refetch same data
@@ -42,7 +46,7 @@ export default function CompetitionSolvesSection({
 
         async function fetchSolves() {
           try {
-            const competitionSolveData = await apiFetch(`/competitions/${slug}/${event}/${round}`);
+            const competitionSolveData = await apiFetch(`/competitions/${encodeURIComponent(slug)}/${encodeURIComponent(event)}/${round}`, { cache: "no-store" });
 
             setSolveData(competitionSolveData);
           } catch (error) {
@@ -71,10 +75,14 @@ export default function CompetitionSolvesSection({
 
     return (
         <div>
-            <div className={"flex justify-around max-w-5xl w-full mx-auto items-center"}>
-                {/*TODO: apparently the below line of type casting is unsafe - fix in future*/}
+            <div className={`mx-auto grid w-full max-w-5xl items-center justify-items-center gap-x-5 gap-y-4 px-6 pb-3 min-[420px]:grid-cols-[minmax(0,1fr)_auto] ${hasScrambles ? "lg:grid-cols-[minmax(0,1fr)_auto_auto]" : ""}`}>
                 <SwitchClick type={"event"} events={allEventData.map(event => event.name)} initialEvent={event} changeFunction={handleEventClick} />
                 <SwitchClick type={"round"} rounds={numRounds} initialRound={round} changeFunction={setRound} />
+                {hasScrambles && (
+                    <div className="min-[420px]:col-span-2 lg:col-span-1">
+                        <CompetitionScramblesButton key={`${event}-${round}`} slug={slug} event={event} round={round} />
+                    </div>
+                )}
             </div>
 
             <div className="max-w-5xl w-full mx-auto px-6 pt-2 pb-10">
